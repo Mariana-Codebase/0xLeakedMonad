@@ -8,6 +8,14 @@ Tus datos ya pueden estar circulando en foros, paste sites y dumps de la dark we
 
 **Red:** Monad Testnet · Chain ID `10143` · [MonadExplorer](https://testnet.monadexplorer.com)
 
+<p align="left">
+  <img src="https://img.shields.io/badge/Network-Monad_Testnet-8B5CF6?style=for-the-badge"/>
+  <img src="https://img.shields.io/badge/Solidity-0.8.24-363636?style=for-the-badge&logo=solidity&logoColor=white"/>
+  <img src="https://img.shields.io/badge/EIP--712-Signed_Evidence-10B981?style=for-the-badge"/>
+  <img src="https://img.shields.io/badge/Dark_Web-Intel-DC2626?style=for-the-badge"/>
+  <img src="https://img.shields.io/badge/Alerts-Real--Time-3A6FFF?style=for-the-badge"/>
+</p>
+
 ---
 
 ## Smart Contracts
@@ -178,6 +186,35 @@ El script imprime las direcciones para `.env` (`BREACH_REGISTRY_ADDRESS`, `ALERT
 | Contract Auditor (publicación en AlertOracle) | ✅ |
 | Remediation Hub (vault deposit/withdraw) | ✅ |
 | Alertas WebSocket + webhooks Alchemy | ✅ |
+
+---
+
+## Equipo
+
+<p align="center">
+  <table>
+    <tr>
+      <td align="center" width="220">
+        <b>🟣 Jorge Martínez</b><br/>
+        <sub>Core · Web3</sub><br/><br/>
+        <a href="https://www.instagram.com/jorge_martinez_78/"><img src="https://img.shields.io/badge/Instagram-@jorge__martinez__78-E4405F?style=for-the-badge&logo=instagram&logoColor=white"/></a><br/>
+        <a href="https://www.linkedin.com/in/jorge-andres-martinez-santos-a59b45387/"><img src="https://img.shields.io/badge/LinkedIn-Jorge_Martínez-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white"/></a>
+      </td>
+      <td align="center" width="220">
+        <b>🔵 Mariana Sinisterra</b><br/>
+        <sub>Core · Product</sub><br/><br/>
+        <a href="https://www.instagram.com/mariana_snstrr/"><img src="https://img.shields.io/badge/Instagram-@mariana__snstrr-C13584?style=for-the-badge&logo=instagram&logoColor=white"/></a><br/>
+        <a href="https://www.linkedin.com/in/marianasinisterra/?locale=es"><img src="https://img.shields.io/badge/LinkedIn-Mariana_Sinisterra-0077B5?style=for-the-badge&logo=linkedin&logoColor=white"/></a>
+      </td>
+      <td align="center" width="220">
+        <b>🟢 Michael Colmenares</b><br/>
+        <sub>Core · Frontend</sub><br/><br/>
+        <a href="https://www.instagram.com/ma1c0ld/"><img src="https://img.shields.io/badge/Instagram-@ma1c0ld-F56040?style=for-the-badge&logo=instagram&logoColor=white"/></a><br/>
+        <a href="https://www.linkedin.com/in/michael-colmenares-v/"><img src="https://img.shields.io/badge/LinkedIn-Michael_Colmenares-004182?style=for-the-badge&logo=linkedin&logoColor=white"/></a>
+      </td>
+    </tr>
+  </table>
+</p>
 
 ---
 
