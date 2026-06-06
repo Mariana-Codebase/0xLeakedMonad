@@ -2,7 +2,7 @@
 
 **Infraestructura de ciberinteligencia Web3 para detección, alerta y remediación de identidades expuestas en la dark web — con registro criptográfico inmutable sobre Monad.**
 
-> **Definición:** 0xLeaked es un sistema modular de seguridad digital que monitoriza bases de filtraciones, mercados clandestinos y señales de la deep web para identificar cuándo tu email, wallet o credenciales han sido comprometidos. Cuando hay match, **te avisa al instante** vía alertas en tiempo real (WebSocket + webhooks on-chain), registra evidencia verificable con firmas EIP-712 y te permite actuar desde tu wallet: auditar contratos sospechosos, publicar scores de riesgo comunitarios y aislar fondos en una bóveda sin custodia.
+> **Definición:** 0xLeaked es un sistema modular de seguridad digital que monitoriza bases de filtraciones, mercados clandestinos y señales de la deep web para identificar cuándo tu email, wallet o credenciales han sido comprometidos. Cuando hay match, registra evidencia verificable con firmas EIP-712 y te permite actuar desde tu wallet: auditar contratos sospechosos (agente **Claude Sonnet 4**), publicar scores de riesgo comunitarios y — en desarrollo — aislar fondos en una bóveda sin custodia y recibir alertas en tiempo real.
 
 Tus datos ya pueden estar circulando en foros, paste sites y dumps de la dark web sin que lo sepas. 0xLeaked cierra esa ventana ciega: **detecta → alerta → prueba on-chain → remedia** — en segundos, no en meses.
 
@@ -58,10 +58,10 @@ Cada año se filtran miles de millones de registros. Gran parte termina en la **
 | Área | Qué aporta |
 |---|---|
 | **Detección dark web** | Cruza HIBP (+700M cuentas), leak databases y señales de exposición en la deep web. El dato sensible nunca se registra en claro: se hashea con `keccak256`. |
-| **Alerta instantánea** | WebSocket + webhooks de Alchemy notifican en tiempo real cuando hay brecha, actividad sospechosa o contrato de alto riesgo. |
+| **Alerta instantánea** | WebSocket + webhooks de Alchemy para notificar brechas y actividad sospechosa *(módulo en desarrollo — aún no funcional)*. |
 | **Prueba criptográfica** | Cada hallazgo queda ligado a una firma EIP-712 de un verifier autorizado, registrada en Monad. |
 | **Transparencia comunitaria** | `AlertOracle` publica scores de contratos peligrosos para que otros usuarios consulten antes de firmar. |
-| **Auditoría con agente** | El Contract Auditor orquesta un agente de IA que verifica smart contracts (bytecode + código fuente en el explorer), explica vulnerabilidades detectadas y sugiere acciones concretas desde la wallet. |
+| **Auditoría con agente** | El Contract Auditor orquesta un agente de IA (**Claude Sonnet 4**) que verifica smart contracts (bytecode + código fuente en el explorer), explica vulnerabilidades detectadas y sugiere acciones concretas desde la wallet. |
 | **Soberanía del usuario** | Sin signup, sin custodia. Acciones críticas se firman desde tu wallet. |
 
 ---
@@ -91,19 +91,19 @@ Usuario (browser)
     │
     ├─ Contract Auditor ──▶ API Gateway ──▶ analyzer-service ──▶ bytecode RPC
     │                                              │
-    │                                              ├─ Agente IA (verificación + análisis)
+    │                                              ├─ Agente IA · Claude Sonnet 4
     │                                              └─ AlertOracle (Monad)
     │
-    ├─ Remediation Hub ──▶ wallet ──▶ RemediationVault (Monad)
+    ├─ Remediation Hub ──▶ wallet ──▶ RemediationVault (Monad)   [en proceso]
     │
-    └─ Alertas ◀── WebSocket ◀── API Gateway ◀── Alchemy Webhooks
+    └─ Alertas ◀── WebSocket ◀── API Gateway ◀── Alchemy Webhooks   [pendiente]
 ```
 
 **Breach Scanner:** el usuario ingresa email, teléfono o wallet → el servicio consulta fuentes de brechas → sube metadata a IPFS → firma EIP-712 → registra hash on-chain.
 
-**Contract Auditor:** el usuario pega una dirección → análisis heurístico de bytecode (opcodes peligrosos, proxies, blacklist) → verificación del contrato en el explorer → un **agente de IA** orquesta el análisis completo, explica riesgos en lenguaje claro y sugiere acciones → score 0–100 → si el riesgo es alto, se publica en `AlertOracle`.
+**Contract Auditor:** el usuario pega una dirección → análisis heurístico de bytecode (opcodes peligrosos, proxies, blacklist) → verificación del contrato en el explorer → un **agente de IA (Claude Sonnet 4)** orquesta el análisis completo, explica riesgos en lenguaje claro y sugiere acciones → score 0–100 → si el riesgo es alto, se publica en `AlertOracle`.
 
-**Remediation Hub:** tras una alerta, el usuario deposita MON/ERC-20 en su bóveda personal, revoca approvals y retira cuando mitiga el riesgo.
+**Remediation Hub:** *(en proceso)* — depositar MON/ERC-20 en bóveda personal, revocar approvals y retirar fondos tras una alerta. Contrato desplegado; flujo de UI aún en desarrollo.
 
 ---
 
@@ -118,6 +118,7 @@ Solo tecnologías presentes y activas en el código:
 | **Frontend** | Next.js 14, React 18, TypeScript, Tailwind CSS, Recharts |
 | **Wallet** | [Reown AppKit](https://reown.com) + wagmi + viem (WalletConnect e injected wallets) |
 | **Backend** | Express 5, TypeScript, WebSocket (`ws`) |
+| **Agente IA** | [Claude Sonnet 4](https://www.anthropic.com/claude/sonnet) (Anthropic SDK) — orquestación del Contract Auditor |
 | **Datos off-chain** | [Have I Been Pwned API](https://haveibeenpwned.com), IPFS via [Pinata](https://pinata.cloud) |
 | **Infra Web3** | [Alchemy](https://alchemy.com) (RPC Monad + webhooks on-chain) |
 | **Monorepo** | pnpm workspaces, Node.js 20+ |
@@ -165,8 +166,8 @@ El script imprime las direcciones para `.env` (`BREACH_REGISTRY_ADDRESS`, `ALERT
 ├── apps/api-gateway/      # Gateway + webhooks Alchemy + WebSocket
 ├── services/
 │   ├── breach/            # Detección HIBP + registro on-chain
-│   ├── analyzer/          # Auditoría de bytecode + agente IA + AlertOracle
-│   └── alert/             # Notificaciones internas
+│   ├── analyzer/          # Auditoría de bytecode + agente IA (Sonnet 4) + AlertOracle
+│   └── alert/             # Notificaciones internas (pendiente)
 ├── contracts/             # Solidity + Hardhat
 └── packages/
     ├── abi/               # ABIs compartidos
@@ -183,10 +184,10 @@ El script imprime las direcciones para `.env` (`BREACH_REGISTRY_ADDRESS`, `ALERT
 | Breach Scanner (HIBP + hash + IPFS) | ✅ |
 | Breach Scanner (registro on-chain) | ✅ |
 | Contract Auditor (bytecode + score) | ✅ |
-| Contract Auditor (agente IA de verificación) | ✅ |
+| Contract Auditor (agente IA · Claude Sonnet 4) | ✅ |
 | Contract Auditor (publicación en AlertOracle) | ✅ |
-| Remediation Hub (vault deposit/withdraw) | ✅ |
-| Alertas WebSocket + webhooks Alchemy | ✅ |
+| Remediation Hub (vault deposit/withdraw) | 🚧 En proceso |
+| Alertas WebSocket + webhooks Alchemy | ❌ No funcional |
 
 ---
 
