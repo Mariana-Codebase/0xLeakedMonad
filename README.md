@@ -24,17 +24,15 @@ Tus datos ya pueden estar circulando en foros, paste sites y dumps de la dark we
 
 | Contrato | Función | Código fuente | Explorer |
 |---|---|---|---|
-| **BreachRegistry** | Registro inmutable de brechas (hash + metadata) | [BreachRegistry.sol](https://github.com/Mariana-Codebase/0xLeakedMonad/blob/main/contracts/contracts/BreachRegistry.sol) | `https://testnet.monadexplorer.com/address/{BREACH_REGISTRY}` |
-| **AlertOracle** | Scores de riesgo de contratos (0–100), consultables por la comunidad | [AlertOracle.sol](https://github.com/Mariana-Codebase/0xLeakedMonad/blob/main/contracts/contracts/AlertOracle.sol) | `https://testnet.monadexplorer.com/address/{ALERT_ORACLE}` |
-| **RemediationVault** | Bóveda personal sin custodia para MON y ERC-20 en emergencias | [RemediationVault.sol](https://github.com/Mariana-Codebase/0xLeakedMonad/blob/main/contracts/contracts/RemediationVault.sol) | `https://testnet.monadexplorer.com/address/{REMEDIATION_VAULT}` |
+| **BreachRegistry** | Registro inmutable de brechas (hash + metadata) | [BreachRegistry.sol](https://github.com/Mariana-Codebase/0xLeakedMonad/blob/main/contracts/contracts/BreachRegistry.sol) | [testnet.monadexplorer.com/address/{BREACH_REGISTRY}](https://testnet.monadexplorer.com/address/{BREACH_REGISTRY}) |
+| **AlertOracle** | Scores de riesgo de contratos (0–100), consultables por la comunidad | [AlertOracle.sol](https://github.com/Mariana-Codebase/0xLeakedMonad/blob/main/contracts/contracts/AlertOracle.sol) | [testnet.monadexplorer.com/address/{ALERT_ORACLE}](https://testnet.monadexplorer.com/address/{ALERT_ORACLE}) |
+| **RemediationVault** | Bóveda personal sin custodia para MON y ERC-20 en emergencias | [RemediationVault.sol](https://github.com/Mariana-Codebase/0xLeakedMonad/blob/main/contracts/contracts/RemediationVault.sol) | [testnet.monadexplorer.com/address/{REMEDIATION_VAULT}](https://testnet.monadexplorer.com/address/{REMEDIATION_VAULT}) |
 
 **Recursos adicionales**
 
 - [ABI exportados](packages/abi/) — interfaces usadas por frontend y servicios
 - [Tests](contracts/test/BreachRegistry.test.ts) — suite Hardhat del registro de brechas
 - [Script de deploy](contracts/scripts/deploy.ts) — `pnpm --filter @0xleaked/contracts deploy:monad`
-
-Las direcciones desplegadas las imprime el script de deploy; sustitúyelas en la columna Explorer o configúralas en `.env`.
 
 ### Diseño on-chain
 
@@ -63,6 +61,7 @@ Cada año se filtran miles de millones de registros. Gran parte termina en la **
 | **Alerta instantánea** | WebSocket + webhooks de Alchemy notifican en tiempo real cuando hay brecha, actividad sospechosa o contrato de alto riesgo. |
 | **Prueba criptográfica** | Cada hallazgo queda ligado a una firma EIP-712 de un verifier autorizado, registrada en Monad. |
 | **Transparencia comunitaria** | `AlertOracle` publica scores de contratos peligrosos para que otros usuarios consulten antes de firmar. |
+| **Auditoría con agente** | El Contract Auditor orquesta un agente de IA que verifica smart contracts (bytecode + código fuente en el explorer), explica vulnerabilidades detectadas y sugiere acciones concretas desde la wallet. |
 | **Soberanía del usuario** | Sin signup, sin custodia. Acciones críticas se firman desde tu wallet. |
 
 ---
@@ -92,6 +91,7 @@ Usuario (browser)
     │
     ├─ Contract Auditor ──▶ API Gateway ──▶ analyzer-service ──▶ bytecode RPC
     │                                              │
+    │                                              ├─ Agente IA (verificación + análisis)
     │                                              └─ AlertOracle (Monad)
     │
     ├─ Remediation Hub ──▶ wallet ──▶ RemediationVault (Monad)
@@ -101,7 +101,7 @@ Usuario (browser)
 
 **Breach Scanner:** el usuario ingresa email, teléfono o wallet → el servicio consulta fuentes de brechas → sube metadata a IPFS → firma EIP-712 → registra hash on-chain.
 
-**Contract Auditor:** el usuario pega una dirección → análisis heurístico de bytecode (opcodes peligrosos, proxies, blacklist) → score 0–100 → si el riesgo es alto, se publica en `AlertOracle`.
+**Contract Auditor:** el usuario pega una dirección → análisis heurístico de bytecode (opcodes peligrosos, proxies, blacklist) → verificación del contrato en el explorer → un **agente de IA** orquesta el análisis completo, explica riesgos en lenguaje claro y sugiere acciones → score 0–100 → si el riesgo es alto, se publica en `AlertOracle`.
 
 **Remediation Hub:** tras una alerta, el usuario deposita MON/ERC-20 en su bóveda personal, revoca approvals y retira cuando mitiga el riesgo.
 
@@ -165,7 +165,7 @@ El script imprime las direcciones para `.env` (`BREACH_REGISTRY_ADDRESS`, `ALERT
 ├── apps/api-gateway/      # Gateway + webhooks Alchemy + WebSocket
 ├── services/
 │   ├── breach/            # Detección HIBP + registro on-chain
-│   ├── analyzer/          # Auditoría de bytecode + AlertOracle
+│   ├── analyzer/          # Auditoría de bytecode + agente IA + AlertOracle
 │   └── alert/             # Notificaciones internas
 ├── contracts/             # Solidity + Hardhat
 └── packages/
@@ -183,6 +183,7 @@ El script imprime las direcciones para `.env` (`BREACH_REGISTRY_ADDRESS`, `ALERT
 | Breach Scanner (HIBP + hash + IPFS) | ✅ |
 | Breach Scanner (registro on-chain) | ✅ |
 | Contract Auditor (bytecode + score) | ✅ |
+| Contract Auditor (agente IA de verificación) | ✅ |
 | Contract Auditor (publicación en AlertOracle) | ✅ |
 | Remediation Hub (vault deposit/withdraw) | ✅ |
 | Alertas WebSocket + webhooks Alchemy | ✅ |
