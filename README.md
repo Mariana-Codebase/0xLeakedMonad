@@ -195,22 +195,25 @@ El script imprime las direcciones para `.env` (`BREACH_REGISTRY_ADDRESS`, `ALERT
   <table>
     <tr>
       <td align="center" width="220">
+        <img src="docs/team/jorge.png" width="120" height="120" alt="Jorge Martínez" style="border-radius:50%; object-fit:cover; border:3px solid #8B5CF6;"/><br/><br/>
         <b>🟣 Jorge Martínez</b><br/>
-        <sub>Core · Web3</sub><br/><br/>
+        <sub>Backend</sub><br/><br/>
         <a href="https://www.instagram.com/jorge_martinez_78/"><img src="https://img.shields.io/badge/Instagram-@jorge__martinez__78-E4405F?style=for-the-badge&logo=instagram&logoColor=white"/></a><br/>
         <a href="https://www.linkedin.com/in/jorge-andres-martinez-santos-a59b45387/"><img src="https://img.shields.io/badge/LinkedIn-Jorge_Martínez-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white"/></a>
       </td>
       <td align="center" width="220">
+        <img src="docs/team/mariana.png" width="120" height="120" alt="Mariana Sinisterra" style="border-radius:50%; object-fit:cover; border:3px solid #3A6FFF;"/><br/><br/>
         <b>🔵 Mariana Sinisterra</b><br/>
-        <sub>Core · Product</sub><br/><br/>
+        <sub>Blockchain</sub><br/><br/>
         <a href="https://www.instagram.com/mariana_snstrr/"><img src="https://img.shields.io/badge/Instagram-@mariana__snstrr-C13584?style=for-the-badge&logo=instagram&logoColor=white"/></a><br/>
         <a href="https://www.linkedin.com/in/marianasinisterra/?locale=es"><img src="https://img.shields.io/badge/LinkedIn-Mariana_Sinisterra-0077B5?style=for-the-badge&logo=linkedin&logoColor=white"/></a>
       </td>
       <td align="center" width="220">
-        <b>🟢 Michael Colmenares</b><br/>
-        <sub>Core · Frontend</sub><br/><br/>
+        <img src="docs/team/maicol.png" width="120" height="120" alt="Maicol Colmenares" style="border-radius:50%; object-fit:cover; border:3px solid #10B981;"/><br/><br/>
+        <b>🟢 Maicol Colmenares</b><br/>
+        <sub>Frontend</sub><br/><br/>
         <a href="https://www.instagram.com/ma1c0ld/"><img src="https://img.shields.io/badge/Instagram-@ma1c0ld-F56040?style=for-the-badge&logo=instagram&logoColor=white"/></a><br/>
-        <a href="https://www.linkedin.com/in/michael-colmenares-v/"><img src="https://img.shields.io/badge/LinkedIn-Michael_Colmenares-004182?style=for-the-badge&logo=linkedin&logoColor=white"/></a>
+        <a href="https://www.linkedin.com/in/michael-colmenares-v/"><img src="https://img.shields.io/badge/LinkedIn-Maicol_Colmenares-004182?style=for-the-badge&logo=linkedin&logoColor=white"/></a>
       </td>
     </tr>
   </table>
