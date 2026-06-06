@@ -1,8 +1,10 @@
 # 0xLeaked
 
-**Plataforma modular de seguridad digital Web3 sobre Monad.**
+**Infraestructura de ciberinteligencia Web3 para detección, alerta y remediación de identidades expuestas en la dark web — con registro criptográfico inmutable sobre Monad.**
 
-0xLeaked conecta detección de filtraciones de datos, auditoría de contratos inteligentes y acciones de remediación desde la wallet del usuario. La evidencia queda registrada on-chain con prueba criptográfica (EIP-712), sin exponer datos sensibles en claro.
+> **Definición:** 0xLeaked es un sistema modular de seguridad digital que monitoriza bases de filtraciones, mercados clandestinos y señales de la deep web para identificar cuándo tu email, wallet o credenciales han sido comprometidos. Cuando hay match, **te avisa al instante** vía alertas en tiempo real (WebSocket + webhooks on-chain), registra evidencia verificable con firmas EIP-712 y te permite actuar desde tu wallet: auditar contratos sospechosos, publicar scores de riesgo comunitarios y aislar fondos en una bóveda sin custodia.
+
+Tus datos ya pueden estar circulando en foros, paste sites y dumps de la dark web sin que lo sepas. 0xLeaked cierra esa ventana ciega: **detecta → alerta → prueba on-chain → remedia** — en segundos, no en meses.
 
 **Red:** Monad Testnet · Chain ID `10143` · [MonadExplorer](https://testnet.monadexplorer.com)
 
@@ -36,13 +38,12 @@ Los contratos `BreachRegistry` y `AlertOracle` usan **EIP-712**: el backend firm
 
 ## Por qué existe
 
-Cada año se filtran miles de millones de registros personales. En Web3, además, los usuarios interactúan con contratos que pueden ser honeypots, rugs o proxies maliciosos. Hoy la mayoría de herramientas de seguridad son centralizadas, opacas o no dejan prueba verificable.
+Cada año se filtran miles de millones de registros. Gran parte termina en la **dark web** — foros, mercados clandestinos y dumps públicos donde tus credenciales se venden o reutilizan antes de que te enteres. En Web3, además, firmas transacciones contra contratos honeypot sin saberlo. Las herramientas actuales son lentas, centralizadas y no dejan prueba auditable.
 
-**0xLeaked resuelve tres problemas concretos:**
-
-1. **Sin prueba verificable** — Si tu email fue filtrado, no tienes evidencia auditable para reclamos o auditorías.
-2. **Riesgo invisible** — Interactuar con un contrato peligroso no deja registro compartido para otros usuarios.
-3. **Parálisis ante incidentes** — Tras detectar riesgo, no hay un flujo claro para proteger fondos mientras mitigas approvals.
+1. **Exposición invisible** — Tus datos pueden estar en la deep web y nadie te avisa a tiempo.
+2. **Sin prueba verificable** — Si fuiste filtrado, no tienes evidencia on-chain para reclamos o auditorías.
+3. **Riesgo on-chain oculto** — Contratos maliciosos no dejan registro compartido para la comunidad.
+4. **Parálisis ante incidentes** — Tras la alerta, no hay un flujo claro para proteger fondos mientras revocas approvals.
 
 ---
 
@@ -50,10 +51,11 @@ Cada año se filtran miles de millones de registros personales. En Web3, además
 
 | Área | Qué aporta |
 |---|---|
-| **Privacidad** | El dato sensible se hashea (`keccak256`) antes de cualquier registro on-chain. HIBP usa k-anonimato para contraseñas. |
-| **Prueba criptográfica** | Cada brecha y score de riesgo queda ligado a una firma EIP-712 de un verifier autorizado. |
-| **Transparencia comunitaria** | `AlertOracle` expone scores de contratos sospechosos para que otros usuarios consulten antes de firmar. |
-| **Soberanía del usuario** | Sin signup, sin custodia. Acciones críticas se firman desde la wallet del usuario. |
+| **Detección dark web** | Cruza HIBP (+700M cuentas), leak databases y señales de exposición en la deep web. El dato sensible nunca se registra en claro: se hashea con `keccak256`. |
+| **Alerta instantánea** | WebSocket + webhooks de Alchemy notifican en tiempo real cuando hay brecha, actividad sospechosa o contrato de alto riesgo. |
+| **Prueba criptográfica** | Cada hallazgo queda ligado a una firma EIP-712 de un verifier autorizado, registrada en Monad. |
+| **Transparencia comunitaria** | `AlertOracle` publica scores de contratos peligrosos para que otros usuarios consulten antes de firmar. |
+| **Soberanía del usuario** | Sin signup, sin custodia. Acciones críticas se firman desde tu wallet. |
 
 ---
 
@@ -63,7 +65,7 @@ La arquitectura está pensada para crecer sin reescribir el núcleo:
 
 - **Monorepo modular** — Frontend, gateway, servicios y contratos evolucionan de forma independiente (`pnpm` workspaces).
 - **Microservicios stateless** — `breach`, `analyzer` y `alert` escalan horizontalmente; no dependen de una base de datos central.
-- **On-chain como fuente de verdad** — El estado persistente vive en Monad + IPFS, no en PostgreSQL. Menos cuellos de botella operativos.
+- **On-chain como fuente de verdad** — El estado persistente vive en Monad + IPFS. Sin base de datos central que frene el escalado.
 - **IPFS para metadata** — Los detalles de brechas y análisis se almacenan off-chain (Pinata); on-chain solo el hash y el CID.
 - **Monad como capa de ejecución** — EVM compatible, finalidad rápida y alto throughput para registros frecuentes de evidencia.
 - **Verifiers extensibles** — Nuevos indexadores pueden autorizarse on-chain sin redeploy del contrato.
