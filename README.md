@@ -209,11 +209,11 @@ El script imprime las direcciones para `.env` (`BREACH_REGISTRY_ADDRESS`, `ALERT
         <a href="https://www.linkedin.com/in/marianasinisterra/?locale=es"><img src="https://img.shields.io/badge/LinkedIn-Mariana_Sinisterra-0077B5?style=for-the-badge&logo=linkedin&logoColor=white"/></a>
       </td>
       <td align="center" width="220">
-        <img src="docs/team/maicol.png" width="120" height="120" alt="Maicol Colmenares" style="border-radius:50%; object-fit:cover; border:3px solid #10B981;"/><br/><br/>
-        <b>🟢 Maicol Colmenares</b><br/>
+        <img src="docs/team/michael.png" width="120" height="120" alt="Michael Colmenares" style="border-radius:50%; object-fit:cover; border:3px solid #10B981;"/><br/><br/>
+        <b>🟢 Michael Colmenares</b><br/>
         <sub>Frontend</sub><br/><br/>
         <a href="https://www.instagram.com/ma1c0ld/"><img src="https://img.shields.io/badge/Instagram-@ma1c0ld-F56040?style=for-the-badge&logo=instagram&logoColor=white"/></a><br/>
-        <a href="https://www.linkedin.com/in/michael-colmenares-v/"><img src="https://img.shields.io/badge/LinkedIn-Maicol_Colmenares-004182?style=for-the-badge&logo=linkedin&logoColor=white"/></a>
+        <a href="https://www.linkedin.com/in/michael-colmenares-v/"><img src="https://img.shields.io/badge/LinkedIn-Michael_Colmenares-004182?style=for-the-badge&logo=linkedin&logoColor=white"/></a>
       </td>
     </tr>
   </table>
