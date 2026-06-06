@@ -29,16 +29,17 @@ export function useLaunchAppFlow() {
     beforeNavigateRef.current?.();
     beforeNavigateRef.current = undefined;
     pendingOnboardingRef.current = false;
-    setPhase("idle");
 
+    // Mantenemos el overlay de onboarding montado (no pasamos a "idle") para que
+    // el landing no quede visible detrás mientras se completa la navegación.
+    router.push(PLATFORM_ROUTE);
+
+    // Respaldo: si la navegación SPA no cambió la ruta, forzamos una dura.
     window.setTimeout(() => {
-      router.push(PLATFORM_ROUTE);
-      window.setTimeout(() => {
-        if (window.location.pathname !== PLATFORM_ROUTE) {
-          window.location.assign(PLATFORM_ROUTE);
-        }
-      }, 400);
-    }, 150);
+      if (window.location.pathname !== PLATFORM_ROUTE) {
+        window.location.assign(PLATFORM_ROUTE);
+      }
+    }, 300);
   }, [router]);
 
   const proceedToOnboarding = useCallback(() => {
