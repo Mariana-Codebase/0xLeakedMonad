@@ -163,6 +163,9 @@ importers:
 
   packages/ipfs:
     devDependencies:
+      '@types/node':
+        specifier: ^20.14.2
+        version: 20.19.41
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
