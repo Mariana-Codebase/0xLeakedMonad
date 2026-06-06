@@ -7,7 +7,8 @@ import {
   analyzeContractAddress,
   riskLabelFromVerdict,
   riskColorFromScore,
-  type ContractAuditResult
+  type ContractAuditResult,
+  type AIVulnerability,
 } from "../../lib/contractAuditor";
 import { useLeaked } from "../../lib/useChainWatch";
 import { StatusBanner } from "./StatusBanner";
@@ -34,43 +35,191 @@ type AgentMessage = {
   actionType?: "revoke" | "monitor";
 };
 
+function buildThreatDetail(bc: ContractAuditResult["bytecode"], r: ContractAuditResult): AgentMessage[] {
+  const details: AgentMessage[] = [];
+  if (!bc) return details;
+
+  if (r.isBlacklisted) {
+    details.push({
+      id: "detail-blacklist",
+      text: "LISTA NEGRA: Esta dirección aparece en bases de datos públicas de contratos maliciosos. Esto significa que ya ha sido reportada por otros usuarios o investigadores de seguridad como un contrato fraudulento. Es muy probable que haya sido usada en estafas previas, phishing o rug-pulls confirmados.",
+      type: "risk",
+    });
+  }
+
+  if (bc.hasSelfdestruct) {
+    details.push({
+      id: "detail-selfdestruct",
+      text: "SELFDESTRUCT detectado: El contrato contiene el opcode SELFDESTRUCT (0xFF), que permite al owner destruir el contrato y enviar todo el ETH almacenado a una dirección arbitraria. En la práctica, esto significa que el creador puede vaciar el contrato en cualquier momento sin previo aviso: todos los fondos depositados desaparecen en una sola transacción. Es uno de los vectores de rug-pull más directos.",
+      type: "risk",
+    });
+  }
+
+  if (bc.hasDelegatecall && !bc.isMinimalProxy) {
+    details.push({
+      id: "detail-delegatecall",
+      text: "DELEGATECALL detectado: Este opcode permite que el contrato ejecute código de OTRO contrato pero en su propio contexto de almacenamiento. El peligro real: el owner puede cambiar la dirección del contrato de implementación y así cambiar completamente el comportamiento — por ejemplo, hoy el contrato funciona normalmente, mañana la lógica se reemplaza y roba todos los fondos. Es el mecanismo detrás de muchos ataques de \"upgrade malicioso\".",
+      type: "risk",
+    });
+  }
+
+  if (bc.hasHiddenMint) {
+    details.push({
+      id: "detail-mint",
+      text: "MINT OCULTO: Detecté la firma de función mint (0x40c10f19) sin restricción de acceso tipo onlyOwner verificable. Esto significa que alguien podría crear tokens ilimitados de la nada. El ataque típico: el deployer mintea millones de tokens, los vende en el pool de liquidez, colapsa el precio y los holders se quedan con tokens sin valor. Es el patrón clásico de \"infinite mint rug-pull\".",
+      type: "risk",
+    });
+  }
+
+  if (bc.hasHiddenFee) {
+    details.push({
+      id: "detail-fee",
+      text: "FEE OCULTO: El bytecode muestra un patrón inusual de operaciones SSTORE/SLOAD (más de 15/20 respectivamente), lo cual es consistente con lógica de comisiones ocultas. En estos contratos, cada transferencia puede descontar un porcentaje que va al deployer. Algunos llegan a cobrar hasta el 99% de cada transacción, haciendo imposible vender o mover tus tokens de manera rentable.",
+      type: "risk",
+    });
+  }
+
+  if (bc.hasSuspiciousTransfer) {
+    details.push({
+      id: "detail-honeypot",
+      text: "PATRÓN HONEYPOT: Encontré las firmas de transfer (0xa9059cbb) y approve (0x095ea7b3) combinadas con el uso de tx.origin. Este patrón es un honeypot clásico: puedes COMPRAR el token, pero cuando intentas VENDER, la transacción falla o se revierte silenciosamente. El contrato usa tx.origin para discriminar entre el owner (que sí puede vender) y las víctimas (que no pueden). Una vez que compras, tus fondos quedan atrapados.",
+      type: "risk",
+    });
+  }
+
+  if (bc.isProxy && !bc.isMinimalProxy) {
+    details.push({
+      id: "detail-proxy",
+      text: "PROXY UPGRADEABLE: Este contrato es un proxy, lo que significa que la lógica real vive en otro contrato que puede ser reemplazado. Aunque los proxies son legítimos en muchos protocolos (Uniswap, Aave los usan), también representan un riesgo: el admin del proxy puede cambiar toda la lógica del contrato sin que los usuarios lo noten. Verifica quién controla el upgrade y si hay un timelock de seguridad.",
+      type: "risk",
+    });
+  } else if (bc.isMinimalProxy) {
+    details.push({
+      id: "detail-minproxy",
+      text: "PROXY MÍNIMO (EIP-1167): Este contrato es un clone que delega toda su lógica a un contrato de implementación. La lógica NO puede cambiar (a diferencia de proxies upgradeables), pero debes verificar que el contrato de implementación al que apunta sea seguro. El riesgo está en lo que hace ese contrato destino, no en el proxy en sí.",
+      type: "analysis",
+    });
+  }
+
+  if (bc.hasOrigin && !bc.hasSuspiciousTransfer) {
+    details.push({
+      id: "detail-origin",
+      text: "TX.ORIGIN detectado: El contrato usa tx.origin para autenticación en lugar de msg.sender. Esto es una vulnerabilidad conocida: si interactúas con este contrato a través de otro contrato (por ejemplo, un DEX agregador), un atacante puede explotar la diferencia entre tx.origin y msg.sender para ejecutar acciones en tu nombre sin tu autorización directa.",
+      type: "risk",
+    });
+  }
+
+  return details;
+}
+
 function buildAgentMessages(r: ContractAuditResult): AgentMessage[] {
   const msgs: AgentMessage[] = [];
   const addr = `${r.contractAddress.slice(0, 6)}…${r.contractAddress.slice(-4)}`;
   const bc = r.bytecode;
 
-  const threats: string[] = [];
-  if (bc?.hasSelfdestruct) threats.push("SELFDESTRUCT");
-  if (bc?.hasDelegatecall) threats.push("DELEGATECALL");
-  if (bc?.hasHiddenMint) threats.push("función oculta de mint");
-  if (bc?.hasHiddenFee) threats.push("fee oculto");
-  if (bc?.hasSuspiciousTransfer) threats.push("patrón honeypot");
-  if (bc?.isProxy) threats.push("patrón proxy upgradeable");
-  if (r.isBlacklisted) threats.push("lista negra global");
+  const threatCount = [
+    bc?.hasSelfdestruct,
+    bc?.hasDelegatecall && !bc?.isMinimalProxy,
+    bc?.hasHiddenMint,
+    bc?.hasHiddenFee,
+    bc?.hasSuspiciousTransfer,
+    bc?.isProxy,
+    r.isBlacklisted,
+    bc?.hasOrigin && !bc?.hasSuspiciousTransfer,
+  ].filter(Boolean).length;
 
-  if (threats.length > 0) {
+  if (threatCount > 0) {
     msgs.push({
       id: "scan",
-      text: `Escaneé el contrato ${addr} y detecté ${threats.length} señal${threats.length > 1 ? "es" : ""} de riesgo: ${threats.join(", ")}.`,
+      text: `Escaneé el bytecode del contrato ${addr} y detecté ${threatCount} señal${threatCount > 1 ? "es" : ""} de riesgo. Voy a explicarte cada una en detalle para que entiendas exactamente qué hace este contrato y por qué es peligroso.`,
       type: "analysis",
     });
   } else {
+    const verified = r.verification?.isVerified;
+    const verifiedNote = verified === true
+      ? " El código fuente está verificado en el explorador, lo cual es una buena señal de transparencia."
+      : verified === false
+        ? " Sin embargo, el código fuente NO está verificado en el explorador, lo que impide auditar la lógica interna."
+        : "";
     msgs.push({
       id: "scan",
-      text: `Escaneé el contrato ${addr}. No encontré patrones peligrosos en el bytecode.`,
+      text: `Escaneé el bytecode completo del contrato ${addr} (${bc?.size ?? 0} bytes). No encontré opcodes peligrosos (sin SELFDESTRUCT, DELEGATECALL ni tx.origin), ni patrones de honeypot, mint oculto o fees sospechosos.${verifiedNote}`,
       type: "analysis",
     });
+  }
+
+  const threatDetails = buildThreatDetail(bc, r);
+  msgs.push(...threatDetails);
+
+  if (r.verification && threatCount > 0) {
+    const v = r.verification;
+    if (v.isVerified === false) {
+      msgs.push({
+        id: "detail-unverified",
+        text: `Además, el código fuente de este contrato NO está verificado en el explorador (${v.source}). Esto agrava el riesgo: sin código fuente público, no se puede auditar la lógica interna, lo que es una red flag adicional. Los proyectos legítimos siempre verifican su código.`,
+        type: "risk",
+      });
+    } else if (v.isVerified === true) {
+      msgs.push({
+        id: "detail-verified",
+        text: `El código fuente sí está verificado en ${v.source}${v.compilerVersion ? ` (Solidity ${v.compilerVersion})` : ""}. Aunque esto permite auditar la lógica, no garantiza que sea seguro — solo que el código es público. Los problemas de bytecode que detecté siguen siendo válidos.`,
+        type: "analysis",
+      });
+    }
+  }
+
+  // AI-powered analysis from Claude
+  const ai = r.ai;
+  if (ai?.available && ai.summary) {
+    msgs.push({
+      id: "ai-summary",
+      text: `🧠 Análisis de IA (Claude): ${ai.summary}`,
+      type: "analysis",
+    });
+
+    if (ai.sourceCodeAnalysis) {
+      msgs.push({
+        id: "ai-source",
+        text: `📝 Análisis del código fuente: ${ai.sourceCodeAnalysis}`,
+        type: "analysis",
+      });
+    }
+
+    if (ai.vulnerabilities.length > 0) {
+      for (const [i, vuln] of ai.vulnerabilities.entries()) {
+        const severityLabel =
+          vuln.severity === "critical" ? "🔴 CRÍTICA"
+            : vuln.severity === "high" ? "🟠 ALTA"
+              : vuln.severity === "medium" ? "🟡 MEDIA"
+                : vuln.severity === "low" ? "🔵 BAJA"
+                  : "ℹ️ INFO";
+
+        msgs.push({
+          id: `ai-vuln-${i}`,
+          text: `${severityLabel} — ${vuln.name}: ${vuln.description} | Impacto: ${vuln.impact} | Recomendación: ${vuln.recommendation}`,
+          type: vuln.severity === "critical" || vuln.severity === "high" ? "risk" : "analysis",
+        });
+      }
+    }
+
+    if (ai.riskNarrative) {
+      msgs.push({
+        id: "ai-narrative",
+        text: `🎯 Evaluación final de IA: ${ai.riskNarrative}`,
+        type: r.riskScore >= 70 ? "risk" : r.riskScore >= 40 ? "analysis" : "info",
+      });
+    }
   }
 
   if (r.riskScore >= 70) {
     msgs.push({
       id: "risk",
-      text: `Nivel de riesgo: CRÍTICO (${r.riskScore}/100). Este contrato presenta comportamiento consistente con un rug-pull o scam. Cualquier approval activo hacia este contrato pone tus fondos en peligro inmediato.`,
+      text: `VEREDICTO: Riesgo CRÍTICO (${r.riskScore}/100). Los patrones detectados son consistentes con un rug-pull, scam o contrato diseñado para robar fondos. Cualquier approval (permiso de gasto) activo hacia este contrato pone tus tokens en peligro inmediato — el contrato podría drenar tu wallet en cualquier momento.`,
       type: "risk",
     });
     msgs.push({
       id: "action",
-      text: "Recomiendo revocar cualquier approval hacia este contrato inmediatamente. ¿Lo hago por ti?",
+      text: "Acción urgente: Recomiendo revocar INMEDIATAMENTE cualquier approval que hayas dado a este contrato. Esto le quita el permiso de mover tus tokens. ¿Quieres que prepare la transacción de revocación?",
       type: "action",
       actionLabel: "Revocar Approval",
       actionType: "revoke",
@@ -78,12 +227,12 @@ function buildAgentMessages(r: ContractAuditResult): AgentMessage[] {
   } else if (r.riskScore >= 40) {
     msgs.push({
       id: "risk",
-      text: `Nivel de riesgo: MEDIO (${r.riskScore}/100). Encontré patrones que requieren atención pero no representan peligro inmediato. Recomiendo monitorear este contrato.`,
+      text: `VEREDICTO: Riesgo MEDIO (${r.riskScore}/100). El contrato tiene características que merecen vigilancia — no son necesariamente maliciosas, pero podrían explotarse. Por ejemplo, los proxies upgradeables son legítimos pero permiten cambios de lógica, y la falta de verificación impide auditoría pública. Recomiendo no dar approvals ilimitados y monitorear el contrato.`,
       type: "risk",
     });
     msgs.push({
       id: "action",
-      text: "Sugiero agregar este contrato a tu lista de monitoreo para recibir alertas si cambia de comportamiento.",
+      text: "Te sugiero agregar este contrato a tu lista de monitoreo. Si el comportamiento cambia (por ejemplo, si se upgradea el proxy o si aparece en listas negras), recibirás una alerta inmediata.",
       type: "action",
       actionLabel: "Agregar a Monitoreo",
       actionType: "monitor",
@@ -91,7 +240,7 @@ function buildAgentMessages(r: ContractAuditResult): AgentMessage[] {
   } else {
     msgs.push({
       id: "risk",
-      text: `Nivel de riesgo: BAJO (${r.riskScore}/100). El contrato parece seguro. No detecté patrones maliciosos conocidos.`,
+      text: `VEREDICTO: Riesgo BAJO (${r.riskScore}/100). El análisis estático del bytecode no reveló patrones maliciosos conocidos. No se detectaron opcodes destructivos, funciones ocultas ni trampas de honeypot.${ai?.available ? "" : " Dicho esto, el análisis estático tiene limitaciones — no puede detectar lógica maliciosa compleja ni vulnerabilidades de reentrancia."} Siempre haz tu propia investigación (DYOR).`,
       type: "risk",
     });
     msgs.push({
@@ -259,7 +408,7 @@ function AISecurityAgent({
       setIsTyping(false);
       return;
     }
-    const delay = visibleCount === 0 ? 800 : 1400 + Math.random() * 600;
+    const delay = visibleCount === 0 ? 800 : visibleCount <= 2 ? 1200 + Math.random() * 400 : 700 + Math.random() * 300;
     const timer = setTimeout(() => setVisibleCount((c) => c + 1), delay);
     return () => clearTimeout(timer);
   }, [visibleCount, messages.length]);
@@ -295,7 +444,9 @@ function AISecurityAgent({
             AI Security Agent
           </h3>
           <p className="text-[11px] text-[#6f88b9]">
-            Análisis inteligente en tiempo real
+            {result.ai?.available
+              ? "Powered by Claude · Análisis profundo con IA"
+              : "Análisis heurístico en tiempo real"}
           </p>
         </div>
         <div className="ml-auto flex items-center gap-1.5">

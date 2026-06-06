@@ -23,6 +23,7 @@ import {
   isBlacklisted,
   type FullAnalysis
 } from "./bytecodeAnalyzer.js";
+import { runAIAnalysis, type AIAnalysisResult } from "./aiAnalyzer.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv({ path: path.resolve(__dirname, "../../../.env") });
@@ -146,6 +147,25 @@ async function pushScoreOnChain(
 }
 
 // --------------------------------------------------------------------------
+// Source code fetching (verified contracts)
+// --------------------------------------------------------------------------
+
+async function fetchVerifiedSourceCode(address: Address): Promise<string | undefined> {
+  try {
+    const url = `https://testnet.monadexplorer.com/api/v2/smart-contracts/${address}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return undefined;
+
+    const data = await res.json();
+    if (!data.is_verified || !data.source_code) return undefined;
+
+    return String(data.source_code).slice(0, 30_000);
+  } catch {
+    return undefined;
+  }
+}
+
+// --------------------------------------------------------------------------
 // POST /analyze
 // --------------------------------------------------------------------------
 
@@ -189,6 +209,17 @@ app.post("/analyze", async (req, res) => {
 
   console.log(`[analyzer-service] request=${requestId} score=${scoring.score} label=${scoring.label} verified=${verification.isVerified}`);
 
+  // AI analysis (runs in parallel with IPFS pin)
+  let sourceCode: string | undefined;
+  if (verification.isVerified) {
+    sourceCode = await fetchVerifiedSourceCode(address);
+    if (sourceCode) {
+      console.log(`[analyzer-service] request=${requestId} código fuente obtenido (${sourceCode.length} chars)`);
+    }
+  }
+
+  const aiPromise = runAIAnalysis(address, analysis, scoring, verification, sourceCode);
+
   // Pin analysis to IPFS
   let ipfsCid: string | undefined;
   try {
@@ -220,6 +251,11 @@ app.post("/analyze", async (req, res) => {
     }
   }
 
+  const aiResult = await aiPromise;
+  if (aiResult.available) {
+    console.log(`[analyzer-service] request=${requestId} IA completada: ${aiResult.vulnerabilities.length} vulnerabilidades`);
+  }
+
   res.json({
     ok: true,
     contractAddress: address,
@@ -245,6 +281,7 @@ app.post("/analyze", async (req, res) => {
       hasSuspiciousTransfer: analysis.hasSuspiciousTransfer
     },
     isBlacklisted: fullAnalysis.isBlacklisted,
+    ai: aiResult,
     onChain: onChain?.ok
       ? {
           registered: true,
