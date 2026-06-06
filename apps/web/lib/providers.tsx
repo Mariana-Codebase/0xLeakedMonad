@@ -2,7 +2,8 @@
 
 import { createAppKit } from "@reown/appkit/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { WagmiProvider } from "wagmi";
 import { monadTestnet } from "./monadChain";
 import { projectId, wagmiAdapter, wagmiConfig } from "./wagmi";
@@ -35,12 +36,25 @@ function initializeAppKit() {
   appKitInitialized = true;
 }
 
-initializeAppKit();
+function AppKitLazyInit() {
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (pathname !== "/") {
+      initializeAppKit();
+    }
+  }, [pathname]);
+
+  return null;
+}
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <WagmiProvider config={wagmiConfig}>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        <AppKitLazyInit />
+        {children}
+      </QueryClientProvider>
     </WagmiProvider>
   );
 }
