@@ -1,0 +1,22 @@
+{
+  "network": "monadTestnet",
+  "chainId": 10143,
+  "explorer": "https://testnet.monadexplorer.com",
+  "contracts": {
+    "BreachRegistry": {
+      "address": "0xC51DD0aD6593559F3E696b2281E9F6fa5D2af09E",
+      "explorer": "https://testnet.monadexplorer.com/address/0xC51DD0aD6593559F3E696b2281E9F6fa5D2af09E",
+      "source": "https://github.com/Mariana-Codebase/0xLeakedMonad/blob/main/contracts/contracts/BreachRegistry.sol"
+    },
+    "AlertOracle": {
+      "address": "0x4B9214a1349825373854fb9cBdFDdb585FB45587",
+      "explorer": "https://testnet.monadexplorer.com/address/0x4B9214a1349825373854fb9cBdFDdb585FB45587",
+      "source": "https://github.com/Mariana-Codebase/0xLeakedMonad/blob/main/contracts/contracts/AlertOracle.sol"
+    },
+    "RemediationVault": {
+      "address": "0x68B31918a3827818097936b503bFf3378a932838",
+      "explorer": "https://testnet.monadexplorer.com/address/0x68B31918a3827818097936b503bFf3378a932838",
+      "source": "https://github.com/Mariana-Codebase/0xLeakedMonad/blob/main/contracts/contracts/RemediationVault.sol"
+    }
+  }
+}

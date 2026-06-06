@@ -22,11 +22,11 @@ Tus datos ya pueden estar circulando en foros, paste sites y dumps de la dark we
 
 > Punto de entrada para revisión técnica. Código fuente, ABI y direcciones desplegadas.
 
-| Contrato | Función | Código fuente | Explorer |
+| Contrato | Función | Código fuente | Dirección |
 |---|---|---|---|
-| **BreachRegistry** | Registro inmutable de brechas (hash + metadata) | [BreachRegistry.sol](https://github.com/Mariana-Codebase/0xLeakedMonad/blob/main/contracts/contracts/BreachRegistry.sol) | [testnet.monadexplorer.com/address/{BREACH_REGISTRY}](https://testnet.monadexplorer.com/address/{BREACH_REGISTRY}) |
-| **AlertOracle** | Scores de riesgo de contratos (0–100), consultables por la comunidad | [AlertOracle.sol](https://github.com/Mariana-Codebase/0xLeakedMonad/blob/main/contracts/contracts/AlertOracle.sol) | [testnet.monadexplorer.com/address/{ALERT_ORACLE}](https://testnet.monadexplorer.com/address/{ALERT_ORACLE}) |
-| **RemediationVault** | Bóveda personal sin custodia para MON y ERC-20 en emergencias | [RemediationVault.sol](https://github.com/Mariana-Codebase/0xLeakedMonad/blob/main/contracts/contracts/RemediationVault.sol) | [testnet.monadexplorer.com/address/{REMEDIATION_VAULT}](https://testnet.monadexplorer.com/address/{REMEDIATION_VAULT}) |
+| **BreachRegistry** | Registro inmutable de brechas (hash + metadata) | [BreachRegistry.sol](https://github.com/Mariana-Codebase/0xLeakedMonad/blob/main/contracts/contracts/BreachRegistry.sol) | [`0xC51DD0aD6593559F3E696b2281E9F6fa5D2af09E`](https://testnet.monadexplorer.com/address/0xC51DD0aD6593559F3E696b2281E9F6fa5D2af09E) |
+| **AlertOracle** | Scores de riesgo de contratos (0–100), consultables por la comunidad | [AlertOracle.sol](https://github.com/Mariana-Codebase/0xLeakedMonad/blob/main/contracts/contracts/AlertOracle.sol) | [`0x4B9214a1349825373854fb9cBdFDdb585FB45587`](https://testnet.monadexplorer.com/address/0x4B9214a1349825373854fb9cBdFDdb585FB45587) |
+| **RemediationVault** | Bóveda personal sin custodia para MON y ERC-20 en emergencias | [RemediationVault.sol](https://github.com/Mariana-Codebase/0xLeakedMonad/blob/main/contracts/contracts/RemediationVault.sol) | [`0x68B31918a3827818097936b503bFf3378a932838`](https://testnet.monadexplorer.com/address/0x68B31918a3827818097936b503bFf3378a932838) |
 
 **Recursos adicionales**
 
