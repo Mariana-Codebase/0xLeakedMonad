@@ -29,7 +29,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv({ path: path.resolve(__dirname, "../../../.env") });
 
 const app = express();
-const port = Number(process.env.PORT ?? process.env.ANALYZER_SERVICE_PORT ?? 4102);
+const port = Number(process.env.ANALYZER_SERVICE_PORT ?? 4102);
 const startedAt = Date.now();
 const oracleAddress = (process.env.ALERT_ORACLE_ADDRESS ?? "").trim() as Address | "";
 const HIGH_RISK_THRESHOLD = 70;
