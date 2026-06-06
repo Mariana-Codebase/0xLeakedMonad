@@ -2,6 +2,22 @@ import { isAddress } from "viem";
 
 const gatewayBaseUrl = process.env.NEXT_PUBLIC_API_GATEWAY_URL ?? "http://localhost:4000";
 
+export type AIVulnerability = {
+  name: string;
+  severity: "critical" | "high" | "medium" | "low" | "info";
+  description: string;
+  impact: string;
+  recommendation: string;
+};
+
+export type AIAnalysis = {
+  available: boolean;
+  summary: string;
+  vulnerabilities: AIVulnerability[];
+  riskNarrative: string;
+  sourceCodeAnalysis?: string;
+};
+
 export type ContractAuditResult = {
   ok: boolean;
   contractAddress: string;
@@ -28,6 +44,7 @@ export type ContractAuditResult = {
     hasHiddenFee: boolean;
     hasSuspiciousTransfer: boolean;
   };
+  ai?: AIAnalysis;
   onChain?: {
     registered: boolean;
     txHash?: string;

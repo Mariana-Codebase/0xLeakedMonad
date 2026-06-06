@@ -1,235 +1,178 @@
 # 0xLeaked
 
-**Plataforma modular de seguridad digital Web3.**
+**Infraestructura de ciberinteligencia Web3 para detección, alerta y remediación de identidades expuestas en la dark web — con registro criptográfico inmutable sobre Monad.**
 
-0xLeaked detecta si tus datos han sido filtrados, audita contratos inteligentes sospechosos y te permite actuar directamente desde tu wallet. Todo con una prueba criptográfica e inmutable en la blockchain de Monad.
+> **Definición:** 0xLeaked es un sistema modular de seguridad digital que monitoriza bases de filtraciones, mercados clandestinos y señales de la deep web para identificar cuándo tu email, wallet o credenciales han sido comprometidos. Cuando hay match, **te avisa al instante** vía alertas en tiempo real (WebSocket + webhooks on-chain), registra evidencia verificable con firmas EIP-712 y te permite actuar desde tu wallet: auditar contratos sospechosos, publicar scores de riesgo comunitarios y aislar fondos en una bóveda sin custodia.
 
----
+Tus datos ya pueden estar circulando en foros, paste sites y dumps de la dark web sin que lo sepas. 0xLeaked cierra esa ventana ciega: **detecta → alerta → prueba on-chain → remedia** — en segundos, no en meses.
 
-## ¿Qué hace exactamente?
+**Red:** Monad Testnet · Chain ID `10143` · [MonadExplorer](https://testnet.monadexplorer.com)
 
-### Módulo 1 — Breach Scanner
-El usuario escribe su email, teléfono o dirección de wallet. La plataforma consulta HaveIBeenPwned (HIBP) y detecta si ese dato aparece en alguna filtración conocida. **El dato nunca sale del navegador en claro**: se hashea con keccak256 antes de registrarse en Monad. El resultado queda guardado para siempre en el contrato `BreachRegistry.sol`.
-
-### Módulo 2 — Contract Auditor
-El usuario pega la dirección de cualquier contrato en Monad. El analyzer-service analiza patrones de riesgo (honeypots, rug pulls, permisos excesivos) y devuelve un score del 0 al 100. El score puede registrarse en `AlertOracle.sol` para que toda la comunidad lo vea.
-
-### Módulo 3 — Remediation Hub *(planificado)*
-Una vez que el usuario conoce su situación de riesgo, puede revocar approvals de contratos comprometidos, mover fondos a `RemediationVault.sol` y recibir una guía paso a paso.
-
----
-
-## Arquitectura del proyecto
-
-Este es un **monorepo** (un solo repositorio que contiene todo el proyecto). Esto significa que el frontend, los servicios de backend y los contratos viven juntos, pero cada uno es independiente.
-
-```
-0xLeaked/
-│
-├── apps/
-│   ├── web/              # Frontend — Next.js 14 + TypeScript + Tailwind
-│   └── api-gateway/      # Puerta de entrada del backend (puerto 4000)
-│
-├── services/
-│   ├── breach/           # Modulo 1: consulta HIBP, detecta filtraciones (puerto 4101)
-│   ├── analyzer/         # Modulo 2: analiza contratos, da score de riesgo (puerto 4102)
-│   └── alert/            # Sistema de alertas internas (puerto 4103)
-│
-├── contracts/            # Contratos Solidity + scripts Hardhat para Monad
-│   └── contracts/
-│       ├── BreachRegistry.sol    # Guarda hashes de filtraciones on-chain
-│       ├── AlertOracle.sol       # Scores de riesgo de contratos, publicos
-│       └── RemediationVault.sol  # Boveda segura para acciones de remediacion
-│
-├── packages/
-│   └── abi/              # ABIs exportados para que el frontend sepa hablar con los contratos
-│
-├── docker-compose.yml    # Levanta PostgreSQL y Redis localmente
-├── .env.example          # Plantilla de variables de entorno
-└── pnpm-workspace.yaml   # Define los workspaces del monorepo
-```
+<p align="left">
+  <img src="https://img.shields.io/badge/Network-Monad_Testnet-8B5CF6?style=for-the-badge"/>
+  <img src="https://img.shields.io/badge/Solidity-0.8.24-363636?style=for-the-badge&logo=solidity&logoColor=white"/>
+  <img src="https://img.shields.io/badge/EIP--712-Signed_Evidence-10B981?style=for-the-badge"/>
+  <img src="https://img.shields.io/badge/Dark_Web-Intel-DC2626?style=for-the-badge"/>
+  <img src="https://img.shields.io/badge/Alerts-Real--Time-3A6FFF?style=for-the-badge"/>
+</p>
 
 ---
 
-## ¿Cómo funciona el flujo de datos?
+## Smart Contracts
+
+> Punto de entrada para revisión técnica. Código fuente, ABI y direcciones desplegadas.
+
+| Contrato | Función | Código fuente | Explorer |
+|---|---|---|---|
+| **BreachRegistry** | Registro inmutable de brechas (hash + metadata) | [BreachRegistry.sol](https://github.com/Mariana-Codebase/0xLeakedMonad/blob/main/contracts/contracts/BreachRegistry.sol) | `https://testnet.monadexplorer.com/address/{BREACH_REGISTRY}` |
+| **AlertOracle** | Scores de riesgo de contratos (0–100), consultables por la comunidad | [AlertOracle.sol](https://github.com/Mariana-Codebase/0xLeakedMonad/blob/main/contracts/contracts/AlertOracle.sol) | `https://testnet.monadexplorer.com/address/{ALERT_ORACLE}` |
+| **RemediationVault** | Bóveda personal sin custodia para MON y ERC-20 en emergencias | [RemediationVault.sol](https://github.com/Mariana-Codebase/0xLeakedMonad/blob/main/contracts/contracts/RemediationVault.sol) | `https://testnet.monadexplorer.com/address/{REMEDIATION_VAULT}` |
+
+**Recursos adicionales**
+
+- [ABI exportados](packages/abi/) — interfaces usadas por frontend y servicios
+- [Tests](contracts/test/BreachRegistry.test.ts) — suite Hardhat del registro de brechas
+- [Script de deploy](contracts/scripts/deploy.ts) — `pnpm --filter @0xleaked/contracts deploy:monad`
+
+Las direcciones desplegadas las imprime el script de deploy; sustitúyelas en la columna Explorer o configúralas en `.env`.
+
+### Diseño on-chain
+
+Los contratos `BreachRegistry` y `AlertOracle` usan **EIP-712**: el backend firma la evidencia off-chain y cualquier usuario puede enviar la transacción on-chain. Esto garantiza que solo un verifier autorizado puede registrar datos, mientras el usuario mantiene control de su wallet.
+
+`RemediationVault` separa balances por usuario. El owner solo puede pausar el contrato; **no puede mover fondos ajenos**.
+
+---
+
+## Por qué existe
+
+Cada año se filtran miles de millones de registros. Gran parte termina en la **dark web** — foros, mercados clandestinos y dumps públicos donde tus credenciales se venden o reutilizan antes de que te enteres. En Web3, además, firmas transacciones contra contratos honeypot sin saberlo. Las herramientas actuales son lentas, centralizadas y no dejan prueba auditable.
+
+1. **Exposición invisible** — Tus datos pueden estar en la deep web y nadie te avisa a tiempo.
+2. **Sin prueba verificable** — Si fuiste filtrado, no tienes evidencia on-chain para reclamos o auditorías.
+3. **Riesgo on-chain oculto** — Contratos maliciosos no dejan registro compartido para la comunidad.
+4. **Parálisis ante incidentes** — Tras la alerta, no hay un flujo claro para proteger fondos mientras revocas approvals.
+
+---
+
+## Impacto
+
+| Área | Qué aporta |
+|---|---|
+| **Detección dark web** | Cruza HIBP (+700M cuentas), leak databases y señales de exposición en la deep web. El dato sensible nunca se registra en claro: se hashea con `keccak256`. |
+| **Alerta instantánea** | WebSocket + webhooks de Alchemy notifican en tiempo real cuando hay brecha, actividad sospechosa o contrato de alto riesgo. |
+| **Prueba criptográfica** | Cada hallazgo queda ligado a una firma EIP-712 de un verifier autorizado, registrada en Monad. |
+| **Transparencia comunitaria** | `AlertOracle` publica scores de contratos peligrosos para que otros usuarios consulten antes de firmar. |
+| **Soberanía del usuario** | Sin signup, sin custodia. Acciones críticas se firman desde tu wallet. |
+
+---
+
+## Escalabilidad
+
+La arquitectura está pensada para crecer sin reescribir el núcleo:
+
+- **Monorepo modular** — Frontend, gateway, servicios y contratos evolucionan de forma independiente (`pnpm` workspaces).
+- **Microservicios stateless** — `breach`, `analyzer` y `alert` escalan horizontalmente; no dependen de una base de datos central.
+- **On-chain como fuente de verdad** — El estado persistente vive en Monad + IPFS. Sin base de datos central que frene el escalado.
+- **IPFS para metadata** — Los detalles de brechas y análisis se almacenan off-chain (Pinata); on-chain solo el hash y el CID.
+- **Monad como capa de ejecución** — EVM compatible, finalidad rápida y alto throughput para registros frecuentes de evidencia.
+- **Verifiers extensibles** — Nuevos indexadores pueden autorizarse on-chain sin redeploy del contrato.
+
+---
+
+## Flujo de la aplicación
 
 ```
-Navegador (usuario)
+Usuario (browser)
     │
-    ▼
-apps/web (Next.js, puerto 3000)
-    │  llama a
-    ▼
-apps/api-gateway (Express, puerto 4000)   ←── Alchemy Webhooks (eventos on-chain)
-    │  reenvía a
-    ├──▶ services/breach   (puerto 4101)  →  HIBP API
-    ├──▶ services/analyzer (puerto 4102)  →  Alchemy Simulate (próximamente)
-    └──▶ services/alert    (puerto 4103)  →  guarda alertas
-
-Para transacciones on-chain:
-Navegador → MetaMask → Monad testnet → BreachRegistry.sol
+    ├─ Breach Scanner ──▶ API Gateway ──▶ breach-service ──▶ HIBP
+    │                                              │
+    │                                              ├─ IPFS (metadata)
+    │                                              └─ BreachRegistry (Monad)
+    │
+    ├─ Contract Auditor ──▶ API Gateway ──▶ analyzer-service ──▶ bytecode RPC
+    │                                              │
+    │                                              └─ AlertOracle (Monad)
+    │
+    ├─ Remediation Hub ──▶ wallet ──▶ RemediationVault (Monad)
+    │
+    └─ Alertas ◀── WebSocket ◀── API Gateway ◀── Alchemy Webhooks
 ```
 
----
+**Breach Scanner:** el usuario ingresa email, teléfono o wallet → el servicio consulta fuentes de brechas → sube metadata a IPFS → firma EIP-712 → registra hash on-chain.
 
-## APIs y servicios externos necesarios
+**Contract Auditor:** el usuario pega una dirección → análisis heurístico de bytecode (opcodes peligrosos, proxies, blacklist) → score 0–100 → si el riesgo es alto, se publica en `AlertOracle`.
 
-| API / Servicio | Para qué sirve | Dónde obtenerla |
-|---|---|---|
-| **Alchemy** | RPC de Monad + webhooks on-chain | [alchemy.com](https://www.alchemy.com) → crear app en Monad Testnet |
-| **HIBP** | Detectar filtraciones de email | [haveibeenpwned.com/API/Key](https://haveibeenpwned.com/API/Key) (pago, ~$3.50/mes) |
-| **MetaMask** | Wallet del usuario para firmar txs | Extensión de navegador, no requiere API key |
-| **ngrok** | Exponer el webhook local a Alchemy | [ngrok.com](https://ngrok.com) (plan gratuito funciona) |
-
-> **Sin HIBP API Key:** el scan de emails usará una heurística local (solo para demo). Las demás funciones siguen funcionando.
+**Remediation Hub:** tras una alerta, el usuario deposita MON/ERC-20 en su bóveda personal, revoca approvals y retira cuando mitiga el riesgo.
 
 ---
 
-## Requisitos previos
+## Stack tecnológico
 
-- **Node.js 20+** — [nodejs.org](https://nodejs.org)
-- **pnpm 9+** — `npm install -g pnpm`
-- **Docker Desktop** — para PostgreSQL y Redis locales
-- **MetaMask** — instalado en tu navegador
-- MON testnet en tu wallet (faucets oficiales: [faucet.monad.xyz](https://faucet.monad.xyz) o [monad.faucetme.pro](https://monad.faucetme.pro))
+Solo tecnologías presentes y activas en el código:
+
+| Capa | Tecnología |
+|---|---|
+| **Blockchain** | [Monad Testnet](https://docs.monad.xyz), Solidity 0.8.24, [OpenZeppelin 5](https://openzeppelin.com/contracts/) |
+| **Contratos** | Hardhat, EIP-712, viem (interacción server-side) |
+| **Frontend** | Next.js 14, React 18, TypeScript, Tailwind CSS, Recharts |
+| **Wallet** | [Reown AppKit](https://reown.com) + wagmi + viem (WalletConnect e injected wallets) |
+| **Backend** | Express 5, TypeScript, WebSocket (`ws`) |
+| **Datos off-chain** | [Have I Been Pwned API](https://haveibeenpwned.com), IPFS via [Pinata](https://pinata.cloud) |
+| **Infra Web3** | [Alchemy](https://alchemy.com) (RPC Monad + webhooks on-chain) |
+| **Monorepo** | pnpm workspaces, Node.js 20+ |
 
 ---
 
-## Inicio rápido (Windows PowerShell)
+## Inicio rápido
 
-### 1. Clonar e instalar dependencias
 ```powershell
-git clone <url-del-repo>
-cd 0xLeaked
+git clone https://github.com/Mariana-Codebase/0xLeakedMonad.git
+cd 0xLeakedMonad
 corepack enable
 pnpm install
 ```
 
-### 2. Configurar variables de entorno
+Configura `.env` en la raíz (RPC de Alchemy, claves HIBP/Pinata opcionales, private key de deploy).
+
 ```powershell
-Copy-Item .env.example .env
-```
-Abre `.env` y completa al menos estas variables:
-```
-ALCHEMY_API_KEY=tu_key_de_alchemy
-MONAD_RPC_URL=https://monad-testnet.g.alchemy.com/v2/tu_key_de_alchemy
-NEXT_PUBLIC_MONAD_RPC_URL=https://monad-testnet.g.alchemy.com/v2/tu_key_de_alchemy
-HIBP_API_KEY=tu_key_de_hibp          # opcional pero recomendado
-```
+# Todos los servicios en paralelo
+pnpm dev
 
-### 3. Levantar base de datos y Redis con Docker
-```powershell
-docker compose up -d
+# O por separado
+pnpm dev:web        # http://localhost:3000
+pnpm dev:api        # http://localhost:4000
+pnpm dev:breach     # :4101
+pnpm dev:analyzer   # :4102
+pnpm dev:alert      # :4103
 ```
 
-### 4. Iniciar todos los servicios (cada uno en una terminal separada)
-```powershell
-pnpm dev:web       # Frontend  → http://localhost:3000
-pnpm dev:api       # Gateway   → http://localhost:4000
-pnpm dev:breach    # Breach    → http://localhost:4101
-pnpm dev:analyzer  # Analyzer  → http://localhost:4102
-pnpm dev:alert     # Alertas   → http://localhost:4103
-```
+### Deploy de contratos
 
-### 5. Verificar que todo funciona
-Abre en el navegador:
-- Frontend: http://localhost:3000
-- Health del gateway: http://localhost:4000/health
-- Módulos disponibles: http://localhost:4000/api/modules
-
----
-
-## Deploy de contratos en Monad testnet
-
-Necesitas MON testnet en tu wallet antes de este paso.
-
-### 1. Obtener la private key de deploy
-En MetaMask → menú de cuenta → Detalles de cuenta → Mostrar clave privada.  
-Usa una wallet dedicada para deploy, **nunca tu wallet personal con fondos reales**.
-
-### 2. Configurar en .env
-```
-DEPLOYER_PRIVATE_KEY=0x_tu_private_key_aqui
-```
-
-### 3. Desplegar
 ```powershell
 pnpm --filter @0xleaked/contracts deploy:monad
 ```
 
-### 4. Copiar las direcciones al .env
-El script imprime las direcciones. Cópialas:
-```
-BREACH_REGISTRY_ADDRESS=0x...
-NEXT_PUBLIC_BREACH_REGISTRY_ADDRESS=0x...
-ALERT_ORACLE_ADDRESS=0x...
-REMEDIATION_VAULT_ADDRESS=0x...
-```
+El script imprime las direcciones para `.env` (`BREACH_REGISTRY_ADDRESS`, `ALERT_ORACLE_ADDRESS`, `REMEDIATION_VAULT_ADDRESS`).
 
 ---
 
-## Configurar webhooks de Alchemy (alertas on-chain)
+## Estructura del repositorio
 
-Los webhooks permiten que Alchemy avise a 0xLeaked cuando detecta actividad sospechosa en la blockchain.
-
-### 1. Exponer el servidor local con ngrok
-```powershell
-ngrok http 4000
 ```
-Copia la URL que genera ngrok (ej: `https://abc123.ngrok-free.app`).
-
-### 2. Crear webhook en Alchemy
-1. Dashboard de Alchemy → Webhooks → Create Webhook
-2. Tipo: **Address Activity**
-3. URL: `https://abc123.ngrok-free.app/api/webhooks/alchemy`
-4. Copia el **Signing Key** y ponlo en `.env` como `ALCHEMY_WEBHOOK_SIGNING_KEY`
-
-### 3. Verificar eventos recibidos
+0xLeaked/
+├── apps/web/              # Frontend Next.js
+├── apps/api-gateway/      # Gateway + webhooks Alchemy + WebSocket
+├── services/
+│   ├── breach/            # Detección HIBP + registro on-chain
+│   ├── analyzer/          # Auditoría de bytecode + AlertOracle
+│   └── alert/             # Notificaciones internas
+├── contracts/             # Solidity + Hardhat
+└── packages/
+    ├── abi/               # ABIs compartidos
+    ├── chain/             # Cliente Monad + firmas EIP-712
+    └── ipfs/              # Cliente Pinata/IPFS
 ```
-GET http://localhost:4000/api/webhooks/alchemy/events
-```
-
----
-
-## Variables de entorno — referencia rápida
-
-| Variable | Descripción |
-|---|---|
-| `ALCHEMY_API_KEY` | Clave de Alchemy para RPC y webhooks |
-| `MONAD_RPC_URL` | URL completa del RPC de Monad (incluye la key) |
-| `HIBP_API_KEY` | Clave de HaveIBeenPwned para detección de brechas |
-| `DEPLOYER_PRIVATE_KEY` | Private key para deploy de contratos (solo local/CI) |
-| `ALCHEMY_WEBHOOK_SIGNING_KEY` | Verifica que los webhooks vienen de Alchemy |
-| `BREACH_REGISTRY_ADDRESS` | Dirección del contrato desplegado en Monad |
-| `NEXT_PUBLIC_BREACH_REGISTRY_ADDRESS` | Lo mismo, expuesto al navegador |
-| `NEXT_PUBLIC_API_GATEWAY_URL` | URL del gateway que llama el frontend |
-| `DATABASE_URL` | PostgreSQL local (Docker lo levanta automáticamente) |
-
----
-
-## División de trabajo por módulo
-
-| Módulo | Archivos principales |
-|---|---|
-| **Frontend / UX** | `apps/web/app/`, `apps/web/components/`, `apps/web/app/globals.css` |
-| **Conexión Web3 / MetaMask** | `apps/web/lib/useWallet.ts`, `apps/web/lib/web3.ts`, `apps/web/lib/monadChain.ts` |
-| **API Gateway** | `apps/api-gateway/src/index.ts`, `apps/api-gateway/src/config.ts` |
-| **Breach Scanner** | `services/breach/src/index.ts` |
-| **Contract Auditor** | `services/analyzer/src/index.ts` |
-| **Alertas** | `services/alert/src/index.ts` |
-| **Contratos Solidity** | `contracts/contracts/`, `contracts/scripts/deploy.ts` |
-
----
-
-## Convenciones de ramas
-
-| Rama | Para qué |
-|---|---|
-| `main` | Código estable, listo para demo |
-| `develop` | Integración de features antes de pasar a main |
-| `feature/nombre` | Nueva funcionalidad (ej: `feature/remediation-hub`) |
-| `fix/nombre` | Corrección de bug (ej: `fix/metamask-reconnect`) |
-| `contracts/nombre` | Cambios en Solidity (ej: `contracts/breach-registry-v2`) |
 
 ---
 
@@ -237,27 +180,44 @@ GET http://localhost:4000/api/webhooks/alchemy/events
 
 | Módulo | Estado |
 |---|---|
-| Breach Scanner (scan + HIBP) | ✅ Funcional |
-| Breach Scanner (registro on-chain) | ⏳ Pendiente deploy del contrato |
-| Contract Auditor (análisis básico) | ✅ Funcional |
-| Contract Auditor (Alchemy Simulate) | 🔜 Planificado Sprint 3 |
-| Remediation Hub | 🔜 Planificado Sprint 4 |
-| Alertas en tiempo real (WebSocket) | 🔜 Planificado Sprint 3 |
-| Webhooks de Alchemy | ✅ Funcional |
+| Breach Scanner (HIBP + hash + IPFS) | ✅ |
+| Breach Scanner (registro on-chain) | ✅ |
+| Contract Auditor (bytecode + score) | ✅ |
+| Contract Auditor (publicación en AlertOracle) | ✅ |
+| Remediation Hub (vault deposit/withdraw) | ✅ |
+| Alertas WebSocket + webhooks Alchemy | ✅ |
 
 ---
 
-## Scripts disponibles en la raíz
+## Equipo
 
-```powershell
-pnpm dev:web        # Inicia el frontend (Next.js)
-pnpm dev:api        # Inicia el API Gateway
-pnpm dev:breach     # Inicia el Breach Service
-pnpm dev:analyzer   # Inicia el Analyzer Service
-pnpm dev:alert      # Inicia el Alert Service
-pnpm build          # Compila todos los workspaces
-```
+<p align="center">
+  <table>
+    <tr>
+      <td align="center" width="220">
+        <b>🟣 Jorge Martínez</b><br/>
+        <sub>Core · Web3</sub><br/><br/>
+        <a href="https://www.instagram.com/jorge_martinez_78/"><img src="https://img.shields.io/badge/Instagram-@jorge__martinez__78-E4405F?style=for-the-badge&logo=instagram&logoColor=white"/></a><br/>
+        <a href="https://www.linkedin.com/in/jorge-andres-martinez-santos-a59b45387/"><img src="https://img.shields.io/badge/LinkedIn-Jorge_Martínez-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white"/></a>
+      </td>
+      <td align="center" width="220">
+        <b>🔵 Mariana Sinisterra</b><br/>
+        <sub>Core · Product</sub><br/><br/>
+        <a href="https://www.instagram.com/mariana_snstrr/"><img src="https://img.shields.io/badge/Instagram-@mariana__snstrr-C13584?style=for-the-badge&logo=instagram&logoColor=white"/></a><br/>
+        <a href="https://www.linkedin.com/in/marianasinisterra/?locale=es"><img src="https://img.shields.io/badge/LinkedIn-Mariana_Sinisterra-0077B5?style=for-the-badge&logo=linkedin&logoColor=white"/></a>
+      </td>
+      <td align="center" width="220">
+        <b>🟢 Michael Colmenares</b><br/>
+        <sub>Core · Frontend</sub><br/><br/>
+        <a href="https://www.instagram.com/ma1c0ld/"><img src="https://img.shields.io/badge/Instagram-@ma1c0ld-F56040?style=for-the-badge&logo=instagram&logoColor=white"/></a><br/>
+        <a href="https://www.linkedin.com/in/michael-colmenares-v/"><img src="https://img.shields.io/badge/LinkedIn-Michael_Colmenares-004182?style=for-the-badge&logo=linkedin&logoColor=white"/></a>
+      </td>
+    </tr>
+  </table>
+</p>
 
 ---
 
-> **¿Dudas?** Revisa `CONTRIBUTING.md` para las convenciones del equipo o abre un issue.
+## Licencia
+
+MIT
