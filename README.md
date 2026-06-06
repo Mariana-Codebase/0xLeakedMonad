@@ -7,6 +7,7 @@
 Tus datos ya pueden estar circulando en foros, paste sites y dumps de la dark web sin que lo sepas. 0xLeaked cierra esa ventana ciega: **detecta → alerta → prueba on-chain → remedia** — en segundos, no en meses.
 
 Video: https://www.youtube.com/watch?v=Q0-jyB2f3Yg
+X: https://x.com/marianacodebase/status/2063392759260512682?s=12
 
 **Red:** Monad Testnet · Chain ID `10143` · [MonadExplorer](https://testnet.monadexplorer.com)
 
