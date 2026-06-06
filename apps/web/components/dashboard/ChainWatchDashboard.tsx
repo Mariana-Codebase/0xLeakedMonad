@@ -10,7 +10,6 @@ import { ContractAuditorView } from "./ContractAuditorView";
 import { RemediationHubView } from "./RemediationHubView";
 import { AlertsView } from "./AlertsView";
 import { WalletPanel } from "../WalletPanel";
-import { ModulePlaceholder } from "./ModulePlaceholder";
 import { useLeaked } from "../../lib/useChainWatch";
 import "./dashboard.css";
 
@@ -64,8 +63,7 @@ export function LeakedDashboard({ initialModule = "home" }: Props) {
       icon: <ShieldIcon />,
       enabled: enabledModules.has("remediation-hub")
     },
-    { id: "alerts", label: "Alertas", icon: <BellIcon />, enabled: true },
-    { id: "config", label: "Config", icon: <CogIcon />, enabled: false }
+    { id: "alerts", label: "Alertas", icon: <BellIcon />, enabled: true }
   ];
 
   const handleSearch = useCallback(async () => {
@@ -150,15 +148,6 @@ export function LeakedDashboard({ initialModule = "home" }: Props) {
 
       case "alerts":
         return <AlertsView />;
-
-      case "config":
-        return (
-          <ModulePlaceholder
-            icon={<CogIcon className="h-7 w-7" />}
-            title="Configuración"
-            description="Preferencias de red, módulos habilitados y claves de API."
-          />
-        );
 
       case "home":
       default:
@@ -471,20 +460,6 @@ function BellIcon({ className }: { className?: string }) {
         d="M5.5 17h13l-1.6-2.4A2 2 0 0 1 16.5 13V9a4.5 4.5 0 0 0-9 0v4a2 2 0 0 1-.4 1.6L5.5 17ZM10 20a2 2 0 0 0 4 0"
         stroke="currentColor"
         strokeWidth="1.6"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function CogIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden width="18" height="18">
-      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.6" />
-      <path
-        d="M19.4 13.5a8 8 0 0 0 0-3l2-1.6-2-3.4-2.4.8a8 8 0 0 0-2.6-1.5L14 2h-4l-.4 2.8a8 8 0 0 0-2.6 1.5l-2.4-.8-2 3.4 2 1.6a8 8 0 0 0 0 3l-2 1.6 2 3.4 2.4-.8a8 8 0 0 0 2.6 1.5l.4 2.8h4l.4-2.8a8 8 0 0 0 2.6-1.5l2.4.8 2-3.4-2-1.6Z"
-        stroke="currentColor"
-        strokeWidth="1.4"
         strokeLinejoin="round"
       />
     </svg>

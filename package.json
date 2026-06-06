@@ -4,13 +4,12 @@
   "version": "0.1.0",
   "description": "Monorepo base para 0xLeaked",
   "scripts": {
-    "dev": "pnpm dev:web",
+    "dev": "pnpm --parallel --filter @0xleaked/web --filter @0xleaked/api-gateway --filter @0xleaked/breach-service --filter @0xleaked/analyzer-service --filter @0xleaked/alert-service dev",
     "dev:web": "pnpm --filter @0xleaked/web dev",
     "dev:api": "pnpm --filter @0xleaked/api-gateway dev",
     "dev:breach": "pnpm --filter @0xleaked/breach-service dev",
     "dev:analyzer": "pnpm --filter @0xleaked/analyzer-service dev",
     "dev:alert": "pnpm --filter @0xleaked/alert-service dev",
-    "dev:all-services": "pnpm dev:api & pnpm dev:breach & pnpm dev:analyzer & pnpm dev:alert",
     "build:web": "pnpm --filter @0xleaked/web build",
     "build:api": "pnpm --filter @0xleaked/api-gateway build",
     "lint:web": "corepack pnpm --filter @0xleaked/web lint"
