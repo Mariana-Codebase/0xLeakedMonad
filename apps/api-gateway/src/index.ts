@@ -3,10 +3,9 @@ import crypto from "node:crypto";
 import { createServer } from "node:http";
 import express from "express";
 import { WebSocketServer, WebSocket } from "ws";
-import { isAddress, type Address } from "viem";
-import { remediationVaultAbi } from "@0xleaked/abi";
+import { isAddress, parseAbiItem, type Address } from "viem";
+import { remediationVaultAbi, breachRegistryAbi } from "@0xleaked/abi";
 import { getPublicClient } from "@0xleaked/chain";
-import { prisma } from "@0xleaked/db";
 import { config } from "./config.js";
 import { postJson } from "./http.js";
 
@@ -304,29 +303,41 @@ app.get("/api/events/recent", async (req, res) => {
   const limit = Math.min(Number(req.query.limit ?? 20), 100);
 
   try {
-    const events = await prisma.onChainEvent.findMany({
-      orderBy: { blockNumber: "desc" },
-      take: limit
+    const client = getPublicClient();
+    const currentBlock = await client.getBlockNumber();
+    const fromBlock = currentBlock > 5000n ? currentBlock - 5000n : 0n;
+
+    const registryAddress = config.breachRegistryAddress as Address | undefined;
+    if (!registryAddress) {
+      res.json({ ok: true, count: 0, events: [] });
+      return;
+    }
+
+    const logs = await client.getLogs({
+      address: registryAddress,
+      event: parseAbiItem(
+        "event BreachRecorded(uint256 indexed id, bytes32 indexed targetHash, address indexed beneficiary, string source, string dataType, address reporter, uint256 nonce)"
+      ),
+      fromBlock,
+      toBlock: "latest"
     });
 
-    res.json({
-      ok: true,
-      count: events.length,
-      events: events.map((e) => ({
-        id: e.id.toString(),
-        contract: e.contract,
-        eventName: e.eventName,
-        txHash: e.txHash,
-        blockNumber: e.blockNumber.toString(),
-        logIndex: e.logIndex,
-        args: e.args,
-        indexedAt: e.indexedAt.toISOString()
-      }))
-    });
+    const events = logs.slice(-limit).reverse().map((log, i) => ({
+      id: String(i),
+      contract: registryAddress,
+      eventName: "BreachRecorded",
+      txHash: log.transactionHash ?? "0x",
+      blockNumber: (log.blockNumber ?? 0n).toString(),
+      logIndex: log.logIndex ?? 0,
+      args: { topics: log.topics, data: log.data },
+      indexedAt: new Date().toISOString()
+    }));
+
+    res.json({ ok: true, count: events.length, events });
   } catch (error) {
     res.status(503).json({
       ok: false,
-      error: "indexer_db_unavailable",
+      error: "rpc_unavailable",
       details: (error as Error).message
     });
   }
@@ -404,38 +415,43 @@ export function broadcastToClients(event: {
   }
 }
 
-const originalWebhookHandler = app._router?.stack?.find(
-  (r: { route?: { path?: string } }) => r.route?.path === "/api/webhooks/alchemy"
-);
-
-let lastBroadcastEventId = 0;
+let lastPolledBlock = 0n;
 setInterval(async () => {
   if (wsClients.size === 0) return;
+  const registryAddress = config.breachRegistryAddress as Address | undefined;
+  if (!registryAddress) return;
 
   try {
-    const newEvents = await prisma.onChainEvent.findMany({
-      where: { id: { gt: lastBroadcastEventId } },
-      orderBy: { id: "asc" },
-      take: 10
+    const client = getPublicClient();
+    const currentBlock = await client.getBlockNumber();
+    if (lastPolledBlock === 0n) lastPolledBlock = currentBlock > 50n ? currentBlock - 50n : 0n;
+
+    const logs = await client.getLogs({
+      address: registryAddress,
+      event: parseAbiItem(
+        "event BreachRecorded(uint256 indexed id, bytes32 indexed targetHash, address indexed beneficiary, string source, string dataType, address reporter, uint256 nonce)"
+      ),
+      fromBlock: lastPolledBlock + 1n,
+      toBlock: "latest"
     });
 
-    for (const event of newEvents) {
+    for (const log of logs) {
       broadcastToClients({
         type: "onchain_event",
         data: {
-          id: event.id.toString(),
-          eventName: event.eventName,
-          contract: event.contract,
-          txHash: event.txHash,
-          blockNumber: event.blockNumber.toString(),
-          args: event.args
+          eventName: "BreachRecorded",
+          contract: registryAddress,
+          txHash: log.transactionHash ?? "0x",
+          blockNumber: (log.blockNumber ?? 0n).toString(),
+          args: { topics: log.topics, data: log.data }
         }
       });
-      lastBroadcastEventId = event.id;
     }
+
+    lastPolledBlock = currentBlock;
   } catch {
   }
-}, 3000);
+}, 5000);
 
 server.listen(config.port, () => {
   console.log(`[api-gateway] HTTP + WebSocket corriendo en http://localhost:${config.port}`);

@@ -10,15 +10,12 @@ importers:
 
   apps/api-gateway:
     dependencies:
-      '@chainwatch/abi':
+      '@0xleaked/abi':
         specifier: workspace:*
         version: link:../../packages/abi
-      '@chainwatch/chain':
+      '@0xleaked/chain':
         specifier: workspace:*
         version: link:../../packages/chain
-      '@chainwatch/db':
-        specifier: workspace:*
-        version: link:../../packages/db
       cors:
         specifier: ^2.8.5
         version: 2.8.6
@@ -56,7 +53,7 @@ importers:
 
   apps/web:
     dependencies:
-      '@chainwatch/abi':
+      '@0xleaked/abi':
         specifier: workspace:*
         version: link:../../packages/abi
       '@metamask/connect-evm':
@@ -164,15 +161,8 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/db:
-    dependencies:
-      '@prisma/client':
-        specifier: ^5.22.0
-        version: 5.22.0(prisma@5.22.0)
+  packages/ipfs:
     devDependencies:
-      prisma:
-        specifier: ^5.22.0
-        version: 5.22.0
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -201,15 +191,15 @@ importers:
 
   services/analyzer:
     dependencies:
-      '@chainwatch/abi':
+      '@0xleaked/abi':
         specifier: workspace:*
         version: link:../../packages/abi
-      '@chainwatch/chain':
+      '@0xleaked/chain':
         specifier: workspace:*
         version: link:../../packages/chain
-      '@chainwatch/db':
+      '@0xleaked/ipfs':
         specifier: workspace:*
-        version: link:../../packages/db
+        version: link:../../packages/ipfs
       dotenv:
         specifier: ^16.6.1
         version: 16.6.1
@@ -235,15 +225,15 @@ importers:
 
   services/breach:
     dependencies:
-      '@chainwatch/abi':
+      '@0xleaked/abi':
         specifier: workspace:*
         version: link:../../packages/abi
-      '@chainwatch/chain':
+      '@0xleaked/chain':
         specifier: workspace:*
         version: link:../../packages/chain
-      '@chainwatch/db':
+      '@0xleaked/ipfs':
         specifier: workspace:*
-        version: link:../../packages/db
+        version: link:../../packages/ipfs
       dotenv:
         specifier: ^16.6.1
         version: 16.6.1
@@ -260,40 +250,6 @@ importers:
       '@types/node':
         specifier: ^24.10.1
         version: 24.12.4
-      tsx:
-        specifier: ^4.20.6
-        version: 4.22.3
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
-  services/indexer:
-    dependencies:
-      '@chainwatch/abi':
-        specifier: workspace:*
-        version: link:../../packages/abi
-      '@chainwatch/chain':
-        specifier: workspace:*
-        version: link:../../packages/chain
-      '@chainwatch/db':
-        specifier: workspace:*
-        version: link:../../packages/db
-      dotenv:
-        specifier: ^16.6.1
-        version: 16.6.1
-      viem:
-        specifier: ^2.50.4
-        version: 2.50.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.4.3)
-      ws:
-        specifier: ^8.18.0
-        version: 8.20.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)
-    devDependencies:
-      '@types/node':
-        specifier: ^24.10.1
-        version: 24.12.4
-      '@types/ws':
-        specifier: ^8.5.10
-        version: 8.18.1
       tsx:
         specifier: ^4.20.6
         version: 4.22.3
@@ -1060,30 +1016,6 @@ packages:
   '@pkgjs/parseargs@0.11.0':
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
-
-  '@prisma/client@5.22.0':
-    resolution: {integrity: sha512-M0SVXfyHnQREBKxCgyo7sffrKttwE6R8PMq330MIUF0pTwjUhLbW84pFDlf06B27XyCR++VtjugEnIHdr07SVA==}
-    engines: {node: '>=16.13'}
-    peerDependencies:
-      prisma: '*'
-    peerDependenciesMeta:
-      prisma:
-        optional: true
-
-  '@prisma/debug@5.22.0':
-    resolution: {integrity: sha512-AUt44v3YJeggO2ZU5BkXI7M4hu9BF2zzH2iF2V5pyXT/lRTyWiElZ7It+bRH1EshoMRxHgpYg4VB6rCM+mG5jQ==}
-
-  '@prisma/engines-version@5.22.0-44.605197351a3c8bdd595af2d2a9bc3025bca48ea2':
-    resolution: {integrity: sha512-2PTmxFR2yHW/eB3uqWtcgRcgAbG1rwG9ZriSvQw+nnb7c4uCr3RAcGMb6/zfE88SKlC1Nj2ziUvc96Z379mHgQ==}
-
-  '@prisma/engines@5.22.0':
-    resolution: {integrity: sha512-UNjfslWhAt06kVL3CjkuYpHAWSO6L4kDCVPegV6itt7nD1kSJavd3vhgAEhjglLJJKEdJ7oIqDJ+yHk6qO8gPA==}
-
-  '@prisma/fetch-engine@5.22.0':
-    resolution: {integrity: sha512-bkrD/Mc2fSvkQBV5EpoFcZ87AvOgDxbG99488a5cexp5Ccny+UM6MAe/UFkUC0wLYD9+9befNOqGiIJhhq+HbA==}
-
-  '@prisma/get-platform@5.22.0':
-    resolution: {integrity: sha512-pHhpQdr1UPFpt+zFfnPazhulaZYCUqeIcPpJViYoq9R+D/yw4fjE+CtnsnKzPYm0ddUbeXUzjGVGIRVgPDCk4Q==}
 
   '@protobufjs/aspromise@1.1.2':
     resolution: {integrity: sha512-j+gKExEuLmKwvz3OgROXtrJ2UG2x8Ch2YZUxahh+s1F2HZ+wAceUNLkvy6zKCPVRkU++ZWQrdxsUeQXmcg4uoQ==}
@@ -4516,11 +4448,6 @@ packages:
     engines: {node: '>=10.13.0'}
     hasBin: true
 
-  prisma@5.22.0:
-    resolution: {integrity: sha512-vtpjW3XuYCSnMsNVBjLMNkTj6OZbudcPPTPYHqX0CJfpcdWciI1dM8uHETwmDxxiqEwCIE6WvXucWUetJgfu/A==}
-    engines: {node: '>=16.13'}
-    hasBin: true
-
   process-nextick-args@2.0.1:
     resolution: {integrity: sha512-3ouUOpQhtgrbOa17J7+uxOTpITYWaGP7/AhoR3+A+/1e9skrzelGi/dXzEYyvbxubEF6Wn2ypscTKiKJFFn1ag==}
 
@@ -6562,31 +6489,6 @@ snapshots:
 
   '@pkgjs/parseargs@0.11.0':
     optional: true
-
-  '@prisma/client@5.22.0(prisma@5.22.0)':
-    optionalDependencies:
-      prisma: 5.22.0
-
-  '@prisma/debug@5.22.0': {}
-
-  '@prisma/engines-version@5.22.0-44.605197351a3c8bdd595af2d2a9bc3025bca48ea2': {}
-
-  '@prisma/engines@5.22.0':
-    dependencies:
-      '@prisma/debug': 5.22.0
-      '@prisma/engines-version': 5.22.0-44.605197351a3c8bdd595af2d2a9bc3025bca48ea2
-      '@prisma/fetch-engine': 5.22.0
-      '@prisma/get-platform': 5.22.0
-
-  '@prisma/fetch-engine@5.22.0':
-    dependencies:
-      '@prisma/debug': 5.22.0
-      '@prisma/engines-version': 5.22.0-44.605197351a3c8bdd595af2d2a9bc3025bca48ea2
-      '@prisma/get-platform': 5.22.0
-
-  '@prisma/get-platform@5.22.0':
-    dependencies:
-      '@prisma/debug': 5.22.0
 
   '@protobufjs/aspromise@1.1.2': {}
 
@@ -11675,12 +11577,6 @@ snapshots:
   prelude-ls@1.2.1: {}
 
   prettier@2.8.8: {}
-
-  prisma@5.22.0:
-    dependencies:
-      '@prisma/engines': 5.22.0
-    optionalDependencies:
-      fsevents: 2.3.3
 
   process-nextick-args@2.0.1: {}
 

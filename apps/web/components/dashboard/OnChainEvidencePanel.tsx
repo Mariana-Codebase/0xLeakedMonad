@@ -213,6 +213,53 @@ export function OnChainEvidencePanel({ data, explorerBaseUrl, onRegister, regist
         </div>
       )}
 
+      {/* IPFS storage */}
+      {data.ipfsCid && (
+        <div className="border-b border-white/5 px-5 py-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <div className="mb-1 text-[10px] font-medium uppercase tracking-widest text-[#4a6090]">
+                IPFS CID
+              </div>
+              <button
+                type="button"
+                onClick={() => copyToClipboard(data.ipfsCid!, "cid")}
+                className="group flex items-center gap-1.5 text-left"
+              >
+                <span className="font-mono text-xs text-[#cfe0ff]">
+                  {data.ipfsCid.slice(0, 16)}…{data.ipfsCid.slice(-8)}
+                </span>
+                <span className="text-[10px] text-[#4a6090] opacity-0 transition-opacity group-hover:opacity-100">
+                  {copiedField === "cid" ? "✓" : "copiar"}
+                </span>
+              </button>
+            </div>
+            <div>
+              <div className="mb-1 text-[10px] font-medium uppercase tracking-widest text-[#4a6090]">
+                Datos enriquecidos
+              </div>
+              <a
+                href={`https://gateway.pinata.cloud/ipfs/${data.ipfsCid}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-[#3a6fff] hover:underline"
+              >
+                Ver en IPFS
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                  <path d="M3.5 2h6.5v6.5M9.5 2.5L2 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </a>
+            </div>
+          </div>
+          <div className="mt-2 rounded-md bg-[#0a1020] px-3 py-2">
+            <p className="text-[11px] leading-snug text-[#6f88b9]">
+              Los datos detallados de brechas están almacenados en IPFS de forma descentralizada.
+              El CID queda vinculado al registro on-chain para verificabilidad completa.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Privacy control */}
       <div className="border-b border-white/5 px-5 py-4">
         <div className="mb-3 flex items-center gap-2">

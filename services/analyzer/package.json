@@ -10,7 +10,7 @@
   "dependencies": {
     "@0xleaked/abi": "workspace:*",
     "@0xleaked/chain": "workspace:*",
-    "@0xleaked/db": "workspace:*",
+    "@0xleaked/ipfs": "workspace:*",
     "dotenv": "^16.6.1",
     "express": "^5.1.0",
     "viem": "^2.50.4"

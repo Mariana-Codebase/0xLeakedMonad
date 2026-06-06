@@ -43,6 +43,7 @@ export type BreachDashboardData = {
   leaked: boolean;
   confidence: number;
   source: string;
+  ipfsCid?: string | null;
   evidenceId?: string;
   targetHash?: string;
   radarAxes: RadarAxis[];
@@ -56,6 +57,7 @@ export type BreachDashboardData = {
     evidenceId: string;
     targetHash: string;
     source: string;
+    ipfsCid?: string | null;
     recommendation: string;
     onChain?: OnChainEvidence | null;
   };
@@ -77,11 +79,13 @@ export type RawScanResponse = {
   targetType?: "email" | "phone" | "wallet";
   confidence?: number;
   source?: string;
+  ipfsCid?: string | null;
   breaches?: BreachRecord[];
   evidence?: {
     evidenceId: string;
     targetHash: string;
     source: string;
+    ipfsCid?: string | null;
     recommendation: string;
     onChain?: OnChainEvidence | null;
   };
@@ -381,6 +385,7 @@ export function mapApiResponse(raw: RawScanResponse, target: string): BreachDash
     leaked: raw.leaked,
     confidence,
     source: raw.source ?? "unknown",
+    ipfsCid: raw.ipfsCid ?? raw.evidence?.ipfsCid ?? null,
     evidenceId: raw.evidence?.evidenceId,
     targetHash: raw.evidence?.targetHash,
     evidence: raw.evidence,

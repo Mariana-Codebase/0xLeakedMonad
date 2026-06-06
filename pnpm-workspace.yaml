@@ -4,14 +4,10 @@ packages:
   - "packages/*"
   - "contracts"
 allowBuilds:
-  '@prisma/client': true
-  '@prisma/engines': true
   '@reown/appkit': true
   bufferutil: set this to true or false
   esbuild: true
   keccak: true
-  msgpackr-extract: true
-  prisma: true
   protobufjs: true
   secp256k1: true
   unrs-resolver: true

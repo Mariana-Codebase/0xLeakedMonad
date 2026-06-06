@@ -17,7 +17,7 @@ import {
   signRiskScore,
   makeDeadline
 } from "@0xleaked/chain";
-import { prisma, type RiskLabel } from "@0xleaked/db";
+import { pinJson } from "@0xleaked/ipfs";
 import {
   analyzeContractFull,
   isBlacklisted,
@@ -189,45 +189,31 @@ app.post("/analyze", async (req, res) => {
 
   console.log(`[analyzer-service] request=${requestId} score=${scoring.score} label=${scoring.label} verified=${verification.isVerified}`);
 
-  const labelDb: RiskLabel = scoring.label;
-  const persisted = await prisma.riskScore.upsert({
-    where: { contractAddress: address.toLowerCase() },
-    create: {
-      contractAddress: address.toLowerCase(),
+  // Pin analysis to IPFS
+  let ipfsCid: string | undefined;
+  try {
+    ipfsCid = await pinJson({
+      contractAddress: address,
       score: scoring.score,
-      label: labelDb,
+      label: scoring.label,
       flags: scoring.flags,
       bytecodeSize: analysis.bytecodeSize,
       hasSelfdestruct: analysis.hasSelfdestruct,
       hasDelegatecall: analysis.hasDelegatecall,
-      verified: verification.isVerified
-    },
-    update: {
-      score: scoring.score,
-      label: labelDb,
-      flags: scoring.flags,
-      bytecodeSize: analysis.bytecodeSize,
-      hasSelfdestruct: analysis.hasSelfdestruct,
-      hasDelegatecall: analysis.hasDelegatecall,
-      verified: verification.isVerified
-    }
-  });
+      verified: verification.isVerified,
+      analyzedAt: new Date().toISOString()
+    }, { name: `audit-${address.slice(0, 10)}` });
+    console.log(`[analyzer-service] request=${requestId} IPFS pinned: ${ipfsCid}`);
+  } catch (ipfsErr) {
+    console.warn(`[analyzer-service] request=${requestId} IPFS pin falló:`, (ipfsErr as Error).message);
+  }
 
-  // ---------------- Push on-chain si es high-risk ----------------
+  // Push on-chain si es high-risk
   let onChain: OracleResult | null = null;
   if (scoring.score >= HIGH_RISK_THRESHOLD) {
     onChain = await pushScoreOnChain(address, scoring.score, scoring.label);
 
-    if (onChain.ok) {
-      await prisma.riskScore.update({
-        where: { id: persisted.id },
-        data: {
-          txHash: onChain.txHash,
-          blockNumber: onChain.blockNumber,
-          registeredAt: new Date()
-        }
-      });
-    } else {
+    if (!onChain.ok) {
       console.warn(
         `[analyzer-service] request=${requestId} on-chain falló: ${onChain.code} - ${onChain.reason}`
       );

@@ -27,7 +27,7 @@ type Options = {
   channels?: string[];
 };
 
-const WS_URL = process.env.NEXT_PUBLIC_API_GATEWAY_URL?.replace("http", "ws") + "/ws" ?? "ws://localhost:4000/ws";
+const WS_URL = (process.env.NEXT_PUBLIC_API_GATEWAY_URL?.replace("http", "ws") ?? "ws://localhost:4000") + "/ws";
 const RECONNECT_DELAY_MS = 3000;
 const MAX_RECONNECT_ATTEMPTS = 10;
 const PING_INTERVAL_MS = 30000;

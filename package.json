@@ -10,14 +10,10 @@
     "dev:breach": "pnpm --filter @0xleaked/breach-service dev",
     "dev:analyzer": "pnpm --filter @0xleaked/analyzer-service dev",
     "dev:alert": "pnpm --filter @0xleaked/alert-service dev",
-    "dev:indexer": "pnpm --filter @0xleaked/indexer dev",
-    "dev:all-services": "pnpm dev:api & pnpm dev:breach & pnpm dev:analyzer & pnpm dev:alert & pnpm dev:indexer",
+    "dev:all-services": "pnpm dev:api & pnpm dev:breach & pnpm dev:analyzer & pnpm dev:alert",
     "build:web": "pnpm --filter @0xleaked/web build",
     "build:api": "pnpm --filter @0xleaked/api-gateway build",
-    "lint:web": "corepack pnpm --filter @0xleaked/web lint",
-    "db:generate": "corepack pnpm --filter @0xleaked/db db:generate",
-    "db:migrate": "corepack pnpm --filter @0xleaked/db db:migrate",
-    "db:push": "corepack pnpm --filter @0xleaked/db db:push"
+    "lint:web": "corepack pnpm --filter @0xleaked/web lint"
   },
   "engines": {
     "node": ">=20.0.0"

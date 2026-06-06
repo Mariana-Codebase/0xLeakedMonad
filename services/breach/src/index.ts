@@ -19,7 +19,7 @@ import {
   makeDeadline,
   type BreachEvidencePayload
 } from "@0xleaked/chain";
-import { prisma, type Prisma } from "@0xleaked/db";
+import { pinJson } from "@0xleaked/ipfs";
 import { normalizeAndValidate, ValidationError, type TargetType } from "./validation.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -530,7 +530,6 @@ app.post("/scan", async (req, res) => {
   let confidence = 0.3;
   let breaches: HibpBreach[] = [];
   let source: "hibp" | "simulated" | "manual" | "other" = "other";
-  let rawBreachesJson: Prisma.JsonValue | undefined;
   let walletRisk: Awaited<ReturnType<typeof checkWalletRisk>> | null = null;
   let phoneExposure: Awaited<ReturnType<typeof checkPhoneExposure>> | null = null;
 
@@ -541,21 +540,6 @@ app.post("/scan", async (req, res) => {
       leaked = breaches.length > 0;
       confidence = leaked ? 0.98 : 0.15;
       source = leaked ? "hibp" : "other";
-      rawBreachesJson = leaked
-        ? (breaches.map((b) => ({
-            name: b.Name,
-            title: b.Title,
-            domain: b.Domain,
-            breachDate: b.BreachDate,
-            addedDate: b.AddedDate,
-            pwnCount: b.PwnCount,
-            description: b.Description,
-            dataClasses: b.DataClasses,
-            isVerified: b.IsVerified,
-            isSensitive: b.IsSensitive,
-            logoPath: b.LogoPath
-          })) as Prisma.JsonValue)
-        : undefined;
 
       console.log(`[breach-service] request=${requestId} email=${target.slice(0, 5)}*** breaches=${breaches.length}`);
     } else if (targetType === "wallet") {
@@ -630,29 +614,13 @@ app.post("/scan", async (req, res) => {
   }
 
   // ----------------------------------------------------------------
-  // Paso 2: dedup en DB antes de quemar gas
+  // Paso 2: verificar dedup on-chain (sin DB)
   // ----------------------------------------------------------------
 
-  const existing = leaked
-    ? await prisma.breach.findUnique({
-        where: { targetHash_source: { targetHash, source: sourceForDb(source) } }
-      })
-    : null;
+  const publicClient = getPublicClient();
+  let alreadyOnChain = false;
 
-  // ----------------------------------------------------------------
-  // Paso 3: registro on-chain (si aplica)
-  // Solo se registra si:
-  //   - El usuario lo pide explícitamente (registerOnChain: true)
-  //   - O ya existe un registro previo (para mostrar el txHash)
-  // Esto evita gastar gas en cada scan automático.
-  // ----------------------------------------------------------------
-
-  const shouldRegister = req.body?.registerOnChain === true;
-  let onChain: OnChainResult | null = null;
-
-  if (leaked && shouldRegister && registryAddress) {
-    const publicClient = getPublicClient();
-    let alreadyOnChain = false;
+  if (leaked && registryAddress) {
     try {
       alreadyOnChain = (await publicClient.readContract({
         address: registryAddress,
@@ -663,77 +631,67 @@ app.post("/scan", async (req, res) => {
     } catch (readErr) {
       console.warn(`[breach-service] isRegistered read falló:`, (readErr as Error).message);
     }
+  }
 
-    if (alreadyOnChain) {
-      onChain = {
-        ok: true,
-        txHash: existing?.txHash as Hex,
-        blockNumber: existing?.blockNumber ?? 0n,
-        recordId: 0n
+  // ----------------------------------------------------------------
+  // Paso 3: subir datos enriquecidos a IPFS + registro on-chain
+  // ----------------------------------------------------------------
+
+  const shouldRegister = req.body?.registerOnChain === true;
+  let onChain: OnChainResult | null = null;
+  let ipfsCid: string | undefined;
+
+  // Upload enriched breach data to IPFS
+  if (leaked && breaches.length > 0) {
+    try {
+      const ipfsPayload = {
+        target: targetType === "email" ? target.slice(0, 3) + "***" : "***",
+        targetType,
+        breaches: breaches.map((b) => ({
+          name: b.Name,
+          title: b.Title,
+          domain: b.Domain,
+          breachDate: b.BreachDate,
+          addedDate: b.AddedDate,
+          pwnCount: b.PwnCount,
+          description: b.Description,
+          dataClasses: b.DataClasses,
+          isVerified: b.IsVerified,
+          isSensitive: b.IsSensitive,
+          logoPath: b.LogoPath
+        })),
+        confidence,
+        scannedAt: new Date().toISOString()
       };
-      if (existing?.txHash) {
-        console.log(`[breach-service] request=${requestId} ya on-chain tx=${existing.txHash}`);
-      } else {
-        console.log(`[breach-service] request=${requestId} ya on-chain (sin tx en DB)`);
-      }
-    } else {
-      const pendingRecord =
-        existing ??
-        (await prisma.breach.create({
-          data: {
-            targetHash,
-            targetType: targetType,
-            source: sourceForDb(source),
-            beneficiary: beneficiary === zeroAddress ? null : beneficiary,
-            breachCount: breaches.length,
-            rawBreaches: rawBreachesJson,
-            confidence
-          }
-        }));
 
+      ipfsCid = await pinJson(ipfsPayload, { name: `breach-${evidenceId}` });
+      console.log(`[breach-service] request=${requestId} IPFS pinned: ${ipfsCid}`);
+    } catch (ipfsErr) {
+      console.warn(`[breach-service] request=${requestId} IPFS pin falló:`, (ipfsErr as Error).message);
+    }
+  }
+
+  // Use CID-enriched source for on-chain registration
+  const onChainSource = ipfsCid ? `${source}:${ipfsCid}` : source;
+
+  if (leaked && shouldRegister && registryAddress) {
+    if (alreadyOnChain) {
+      onChain = { ok: true, txHash: undefined, blockNumber: 0n, recordId: 0n };
+      console.log(`[breach-service] request=${requestId} ya on-chain`);
+    } else {
       onChain = await registerOnChain({
         targetHash,
-        source,
+        source: onChainSource,
         dataType: targetType,
         beneficiary
       });
 
-      if (onChain.ok) {
-        await prisma.breach.update({
-          where: { id: pendingRecord.id },
-          data: {
-            txHash: onChain.txHash,
-            blockNumber: onChain.blockNumber,
-            reporter: getServerWallet()?.account.address ?? null,
-            registeredAt: new Date()
-          }
-        });
-      } else {
+      if (!onChain.ok) {
         console.warn(`[breach-service] request=${requestId} on-chain falló: ${onChain.code} - ${onChain.reason}`);
       }
     }
-  } else if (leaked && !existing?.txHash && !shouldRegister) {
-    // Guardar en DB sin registrar on-chain (scan rápido)
-    if (!existing) {
-      await prisma.breach.create({
-        data: {
-          targetHash,
-          targetType: targetType,
-          source: sourceForDb(source),
-          beneficiary: beneficiary === zeroAddress ? null : beneficiary,
-          breachCount: breaches.length,
-          rawBreaches: rawBreachesJson,
-          confidence
-        }
-      });
-    }
-  } else if (existing?.txHash) {
-    onChain = {
-      ok: true,
-      txHash: existing.txHash as Hex,
-      blockNumber: existing.blockNumber ?? 0n,
-      recordId: 0n
-    };
+  } else if (alreadyOnChain) {
+    onChain = { ok: true, txHash: undefined, blockNumber: 0n, recordId: 0n };
   }
 
   // ----------------------------------------------------------------
@@ -746,6 +704,7 @@ app.post("/scan", async (req, res) => {
     leaked,
     confidence,
     source: leaked ? source : "none",
+    ipfsCid: ipfsCid ?? null,
     breaches: breaches.map((b) => ({
       name: b.Name,
       title: b.Title,
@@ -763,6 +722,7 @@ app.post("/scan", async (req, res) => {
       evidenceId,
       targetHash,
       source: leaked ? source : "none",
+      ipfsCid: ipfsCid ?? null,
       onChain: onChain?.ok
         ? {
             registered: true,
@@ -786,11 +746,6 @@ app.post("/scan", async (req, res) => {
     }
   });
 });
-
-function sourceForDb(s: string): "hibp" | "simulated" | "manual" | "other" {
-  if (s === "hibp" || s === "simulated" || s === "manual") return s;
-  return "other";
-}
 
 // --------------------------------------------------------------------------
 // POST /sign-for-claim
