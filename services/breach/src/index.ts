@@ -46,7 +46,7 @@ type HibpBreach = {
 };
 
 const app = express();
-const port = Number(process.env.BREACH_SERVICE_PORT ?? 4101);
+const port = Number(process.env.PORT ?? process.env.BREACH_SERVICE_PORT ?? 4101);
 const hibpApiKey = process.env.HIBP_API_KEY ?? "";
 const hibpBaseUrl = "https://haveibeenpwned.com/API/v3";
 const registryAddress = (process.env.BREACH_REGISTRY_ADDRESS ?? "").trim() as Address | "";

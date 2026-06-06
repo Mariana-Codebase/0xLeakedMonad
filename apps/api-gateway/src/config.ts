@@ -10,7 +10,7 @@ function required(value: string | undefined, fallback: string): string {
 }
 
 export const config = {
-  port: Number(process.env.API_GATEWAY_PORT ?? 4000),
+  port: Number(process.env.PORT ?? process.env.API_GATEWAY_PORT ?? 4000),
   breachServiceUrl: required(process.env.BREACH_SERVICE_URL, "http://localhost:4101"),
   analyzerServiceUrl: required(process.env.ANALYZER_SERVICE_URL, "http://localhost:4102"),
   alertServiceUrl: required(process.env.ALERT_SERVICE_URL, "http://localhost:4103"),
