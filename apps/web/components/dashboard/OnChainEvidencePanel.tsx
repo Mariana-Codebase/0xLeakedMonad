@@ -120,34 +120,50 @@ export function OnChainEvidencePanel({ data, explorerBaseUrl, onRegister, regist
             {isRegistered ? "Registrada en Monad Testnet" : "Pendiente de registro"}
           </p>
         </div>
-        {isRegistered ? (
+        {isRegistered && (
           <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-400">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 cw-dot-live" />
             On-chain
           </span>
-        ) : onRegister ? (
-          <button
-            type="button"
-            onClick={onRegister}
-            disabled={registering}
-            className="flex items-center gap-1.5 rounded-full bg-[#3a6fff]/10 px-3 py-1.5 text-[11px] font-medium text-[#3a6fff] hover:bg-[#3a6fff]/20 transition-colors disabled:opacity-50"
-          >
-            {registering ? (
-              <>
-                <span className="h-3 w-3 animate-spin rounded-full border border-[#3a6fff]/30 border-t-[#3a6fff]" />
-                Registrando…
-              </>
-            ) : (
-              <>
-                <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-                  <path d="M8 1L2 4v4c0 3.5 2.5 6.4 6 7 3.5-.6 6-3.5 6-7V4L8 1z" stroke="currentColor" strokeWidth="1.5" fill="none" />
-                </svg>
-                Registrar on-chain
-              </>
-            )}
-          </button>
-        ) : null}
+        )}
       </div>
+
+      {/* CTA — Registrar on-chain */}
+      {!isRegistered && onRegister && (
+        <div className="border-b border-white/5 px-5 py-5">
+          <div className="rounded-xl border border-[#3a6fff]/20 bg-gradient-to-r from-[#3a6fff]/[0.06] to-[#8b5cf6]/[0.04] p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h4 className="text-sm font-semibold text-white">Guardar prueba en blockchain</h4>
+                <p className="mt-1 text-xs text-[#94a3b8]">
+                  Registra la evidencia de esta brecha en Monad de forma inmutable. Requiere wallet conectada y gas (MON).
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onRegister}
+                disabled={registering}
+                className="flex shrink-0 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#3a6fff] to-[#6366f1] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#3a6fff]/20 transition-all hover:shadow-xl hover:shadow-[#3a6fff]/30 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
+              >
+                {registering ? (
+                  <>
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    Registrando…
+                  </>
+                ) : (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M8 1L2 4v4c0 3.5 2.5 6.4 6 7 3.5-.6 6-3.5 6-7V4L8 1z" stroke="currentColor" strokeWidth="1.5" fill="none" />
+                      <path d="M6 8l1.5 1.5L10.5 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    Registrar on-chain
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* On-chain proof */}
       {isRegistered && txHash && (
@@ -216,46 +232,33 @@ export function OnChainEvidencePanel({ data, explorerBaseUrl, onRegister, regist
       {/* IPFS storage */}
       {data.ipfsCid && (
         <div className="border-b border-white/5 px-5 py-4">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <div className="mb-1 text-[10px] font-medium uppercase tracking-widest text-[#4a6090]">
-                IPFS CID
-              </div>
-              <button
-                type="button"
-                onClick={() => copyToClipboard(data.ipfsCid!, "cid")}
-                className="group flex items-center gap-1.5 text-left"
-              >
-                <span className="font-mono text-xs text-[#cfe0ff]">
-                  {data.ipfsCid.slice(0, 16)}…{data.ipfsCid.slice(-8)}
-                </span>
-                <span className="text-[10px] text-[#4a6090] opacity-0 transition-opacity group-hover:opacity-100">
-                  {copiedField === "cid" ? "✓" : "copiar"}
-                </span>
-              </button>
+          <div className="flex items-start gap-3">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#8b5cf6]/10">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <path d="M8 1v14M1 8h14M4 4l8 8M12 4l-8 8" stroke="#8b5cf6" strokeWidth="1.2" strokeLinecap="round" />
+              </svg>
             </div>
-            <div>
-              <div className="mb-1 text-[10px] font-medium uppercase tracking-widest text-[#4a6090]">
-                Datos enriquecidos
+            <div className="flex-1 min-w-0">
+              <div className="text-xs font-semibold text-white">Almacenamiento descentralizado (IPFS)</div>
+              <p className="mt-1 text-[11px] text-[#6f88b9]">
+                Los datos detallados de brechas se almacenan en IPFS. El CID vincula el registro on-chain con la metadata completa.
+              </p>
+              <div className="mt-2 flex items-center gap-2">
+                <span className="text-[10px] font-medium uppercase tracking-widest text-[#4a6090]">CID</span>
+                <button
+                  type="button"
+                  onClick={() => copyToClipboard(data.ipfsCid!, "cid")}
+                  className="group flex items-center gap-1.5 rounded-md border border-white/5 bg-white/[0.02] px-2 py-1"
+                >
+                  <span className="font-mono text-[11px] text-[#cfe0ff]">
+                    {data.ipfsCid.slice(0, 12)}…{data.ipfsCid.slice(-6)}
+                  </span>
+                  <span className="text-[10px] text-[#4a6090] transition-opacity group-hover:text-[#3a6fff]">
+                    {copiedField === "cid" ? "✓ copiado" : "copiar"}
+                  </span>
+                </button>
               </div>
-              <a
-                href={`https://gateway.pinata.cloud/ipfs/${data.ipfsCid}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-[#3a6fff] hover:underline"
-              >
-                Ver en IPFS
-                <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-                  <path d="M3.5 2h6.5v6.5M9.5 2.5L2 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-              </a>
             </div>
-          </div>
-          <div className="mt-2 rounded-md bg-[#0a1020] px-3 py-2">
-            <p className="text-[11px] leading-snug text-[#6f88b9]">
-              Los datos detallados de brechas están almacenados en IPFS de forma descentralizada.
-              El CID queda vinculado al registro on-chain para verificabilidad completa.
-            </p>
           </div>
         </div>
       )}

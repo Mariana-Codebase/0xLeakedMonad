@@ -74,22 +74,12 @@ function buildPresentation(
 
     case "server_pending":
       return {
-        tone: "warning",
+        tone: "info",
         title: "Registro on-chain pendiente",
-        description: state.message ?? "El servidor no pudo registrar la evidencia.",
+        description: "Usa el botón «Registrar on-chain» en el panel de evidencia para guardar la prueba criptográfica en Monad.",
         actions: [
-          { label: "Reintentar", onClick: helpers.onRetry },
-          {
-            label: "Registrar con mi wallet",
-            onClick: helpers.onClaimOwnership,
-            variant: "primary"
-          }
-        ],
-        extra: (
-          <p className="text-[11px] leading-relaxed text-[#6f88b9]">
-            Conecta MetaMask en Monad Testnet. El gas se estima automáticamente (~1.2M+).
-          </p>
-        )
+          { label: "Reintentar", onClick: helpers.onRetry }
+        ]
       };
 
     case "signing":
@@ -155,21 +145,12 @@ function buildPresentation(
 
     case "blocked": {
       const err = state.error;
-      if (!err) return { tone: "warning", title: "No se puede registrar todavía" };
-
-      const actions: StatusAction[] = [];
-      if (err.code === "wallet_not_connected" && helpers.onConnectWallet) {
-        actions.push({ label: "Conectar wallet", onClick: helpers.onConnectWallet, variant: "primary" });
-      }
-      if (err.code === "wrong_network" && helpers.onSwitchNetwork) {
-        actions.push({ label: "Cambiar a Monad", onClick: helpers.onSwitchNetwork, variant: "primary" });
-      }
+      if (!err) return { tone: "neutral", title: "Pendiente de registro on-chain" };
 
       return {
-        tone: "warning",
+        tone: "neutral",
         title: err.message,
-        description: err.hint,
-        actions: actions.length ? actions : undefined
+        description: err.hint
       };
     }
 

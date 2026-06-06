@@ -13,10 +13,7 @@ export function DashboardWalletChip() {
     isConnected,
     chainId,
     isMonadNetwork,
-    metaMaskConnector,
-    isConnecting,
     isSwitching,
-    connect,
     disconnect,
     switchToMonad
   } = useLeaked();
@@ -25,14 +22,6 @@ export function DashboardWalletChip() {
   if (!isConnected) {
     return (
       <div className="flex gap-2">
-        <button
-          type="button"
-          className="cw-btn-ghost"
-          disabled={isConnecting || !metaMaskConnector}
-          onClick={() => metaMaskConnector && connect({ connector: metaMaskConnector })}
-        >
-          MetaMask
-        </button>
         <button type="button" className="cw-btn" onClick={() => open()}>
           Conectar
         </button>

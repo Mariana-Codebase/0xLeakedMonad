@@ -14,10 +14,7 @@ export function WalletPanel() {
     isConnected,
     isMonadNetwork,
     networkLabel,
-    metaMaskConnector,
-    isConnecting,
     isSwitching,
-    connect,
     disconnect,
     switchToMonad
   } = useLeaked();
@@ -51,8 +48,7 @@ export function WalletPanel() {
           <button
             type="button"
             className="cw-btn"
-            disabled={isConnecting || !metaMaskConnector}
-            onClick={() => metaMaskConnector && connect({ connector: metaMaskConnector })}
+            onClick={() => open()}
           >
             MetaMask
           </button>
@@ -77,9 +73,6 @@ export function WalletPanel() {
                 Cambiar a Monad
               </button>
             )}
-            <button type="button" className="cw-btn-ghost" onClick={() => open({ view: "Account" })}>
-              Cuenta
-            </button>
             <button
               type="button"
               className="rounded-lg border border-white/10 px-3 py-2 text-sm text-[#6f88b9] transition-colors hover:border-white/25 hover:text-white"

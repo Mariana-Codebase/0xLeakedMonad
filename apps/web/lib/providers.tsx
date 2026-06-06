@@ -2,8 +2,7 @@
 
 import { createAppKit } from "@reown/appkit/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect, type ReactNode } from "react";
-import { usePathname } from "next/navigation";
+import { useEffect, useRef, type ReactNode } from "react";
 import { WagmiProvider } from "wagmi";
 import { monadTestnet } from "./monadChain";
 import { projectId, wagmiAdapter, wagmiConfig } from "./wagmi";
@@ -17,42 +16,67 @@ const metadata = {
   icons: ["https://avatars.githubusercontent.com/u/37784827"]
 };
 
-let appKitInitialized = false;
+const WALLET_STORAGE_PREFIXES = [
+  "wagmi",
+  "wc@",
+  "W3M",
+  "@w3m",
+  "@appkit",
+  "@reown",
+  "appkit",
+  "reown"
+];
 
-function initializeAppKit() {
-  if (appKitInitialized) return;
-
-  createAppKit({
-    adapters: [wagmiAdapter],
-    projectId,
-    networks: [monadTestnet],
-    defaultNetwork: monadTestnet,
-    metadata,
-    features: {
-      analytics: false
+function purgeWalletStorage() {
+  try {
+    for (const store of [localStorage, sessionStorage]) {
+      const keys = Object.keys(store);
+      for (const key of keys) {
+        if (WALLET_STORAGE_PREFIXES.some((p) => key.startsWith(p))) {
+          store.removeItem(key);
+        }
+      }
     }
-  });
-
-  appKitInitialized = true;
+  } catch {}
 }
 
-function AppKitLazyInit() {
-  const pathname = usePathname();
+if (typeof window !== "undefined") {
+  purgeWalletStorage();
+}
+
+createAppKit({
+  adapters: [wagmiAdapter],
+  projectId,
+  networks: [monadTestnet],
+  defaultNetwork: monadTestnet,
+  metadata,
+  features: {
+    analytics: false,
+    email: false,
+    socials: []
+  },
+  enableWalletConnect: true,
+  enableInjected: true,
+  enableEIP6963: false
+});
+
+function ClearWalletOnMount() {
+  const cleared = useRef(false);
 
   useEffect(() => {
-    if (pathname !== "/") {
-      initializeAppKit();
-    }
-  }, [pathname]);
+    if (cleared.current) return;
+    cleared.current = true;
+    purgeWalletStorage();
+  }, []);
 
   return null;
 }
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <WagmiProvider config={wagmiConfig}>
+    <WagmiProvider config={wagmiConfig} reconnectOnMount={false}>
       <QueryClientProvider client={queryClient}>
-        <AppKitLazyInit />
+        <ClearWalletOnMount />
         {children}
       </QueryClientProvider>
     </WagmiProvider>
