@@ -20,7 +20,7 @@ type StoredAlert = AlertPayload & {
 };
 
 const app = express();
-const port = Number(process.env.ALERT_SERVICE_PORT ?? 4103);
+const port = Number(process.env.PORT ?? process.env.ALERT_SERVICE_PORT ?? 4103);
 const startedAt = Date.now();
 
 const alerts: StoredAlert[] = [];

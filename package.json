@@ -5,7 +5,6 @@
   "description": "Monorepo base para 0xLeaked",
   "scripts": {
     "dev": "pnpm --parallel --filter @0xleaked/web --filter @0xleaked/api-gateway --filter @0xleaked/breach-service --filter @0xleaked/analyzer-service --filter @0xleaked/alert-service dev",
-    "start": "pnpm --parallel --filter @0xleaked/api-gateway --filter @0xleaked/breach-service --filter @0xleaked/analyzer-service --filter @0xleaked/alert-service start",
     "dev:web": "pnpm --filter @0xleaked/web dev",
     "dev:api": "pnpm --filter @0xleaked/api-gateway dev",
     "dev:breach": "pnpm --filter @0xleaked/breach-service dev",
