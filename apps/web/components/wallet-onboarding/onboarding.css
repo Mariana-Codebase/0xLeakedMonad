@@ -1,0 +1,71 @@
+.wallet-onboarding {
+  --ob-background: oklch(0.14 0.02 260);
+  --ob-foreground: oklch(0.98 0.005 240);
+  --ob-card: oklch(0.18 0.025 260);
+  --ob-primary: oklch(0.78 0.18 160);
+  --ob-muted-fg: oklch(0.7 0.02 250);
+  --ob-glow: oklch(0.85 0.2 160);
+
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  min-height: 100dvh;
+  background-color: var(--ob-background);
+  color: var(--ob-foreground);
+  font-family: "Space Grotesk", system-ui, sans-serif;
+}
+
+.wallet-onboarding .ob-text-primary {
+  color: var(--ob-primary);
+}
+
+.wallet-onboarding .ob-text-muted {
+  color: var(--ob-muted-fg);
+}
+
+.wallet-onboarding .ob-bg-primary {
+  background-color: var(--ob-primary);
+}
+
+.wallet-onboarding .ob-border-primary {
+  border-color: color-mix(in oklch, var(--ob-primary) 40%, transparent);
+}
+
+.wallet-onboarding .ob-bg-card {
+  background-color: color-mix(in oklch, var(--ob-card) 40%, transparent);
+}
+
+.wallet-onboarding .ob-bg-primary-soft {
+  background-color: color-mix(in oklch, var(--ob-primary) 20%, transparent);
+}
+
+.wallet-onboarding .ob-bg-primary-muted {
+  background-color: color-mix(in oklch, var(--ob-primary) 30%, transparent);
+}
+
+.wallet-onboarding .network-bg {
+  background:
+    radial-gradient(ellipse at 20% 10%, oklch(0.3 0.15 250 / 0.5), transparent 50%),
+    radial-gradient(ellipse at 80% 90%, oklch(0.3 0.18 160 / 0.4), transparent 55%),
+    radial-gradient(ellipse at 50% 50%, oklch(0.2 0.05 260), oklch(0.1 0.02 260));
+}
+
+.wallet-onboarding .grid-mesh {
+  background-image:
+    linear-gradient(oklch(0.78 0.18 160 / 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(0.78 0.18 160 / 0.08) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+}
+
+.wallet-onboarding .glow-ring {
+  box-shadow:
+    0 0 0 1px oklch(0.78 0.18 160 / 0.4),
+    0 0 40px oklch(0.78 0.18 160 / 0.3),
+    inset 0 0 40px oklch(0.78 0.18 160 / 0.1);
+}
+
+.wallet-onboarding .ob-font-mono {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+}

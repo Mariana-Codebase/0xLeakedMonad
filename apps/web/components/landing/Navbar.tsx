@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { LaunchAppButton } from "./LaunchAppButton";
 
 const links: Array<{ id: string; label: string }> = [
   { id: "producto", label: "Producto" },
@@ -54,13 +55,10 @@ export function Navbar() {
         </nav>
 
         <div className="hidden items-center gap-2 md:flex">
-          <Link
-            href="/platform"
-            className="group inline-flex items-center gap-1.5 rounded-lg bg-white px-3.5 py-1.5 text-sm font-medium text-[#05070f] transition-transform hover:scale-[1.02]"
-          >
+          <LaunchAppButton className="group inline-flex items-center gap-1.5 rounded-lg bg-white px-3.5 py-1.5 text-sm font-medium text-[#05070f] transition-transform hover:scale-[1.02] disabled:pointer-events-none disabled:opacity-80">
             Lanzar app
             <ArrowIcon className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-          </Link>
+          </LaunchAppButton>
         </div>
 
         <button
@@ -93,13 +91,12 @@ export function Navbar() {
               {link.label}
             </a>
           ))}
-          <Link
-            href="/platform"
-            onClick={() => setOpen(false)}
-            className="mt-2 rounded-lg bg-white px-3 py-2 text-center text-sm font-medium text-[#05070f]"
+          <LaunchAppButton
+            onBeforeNavigate={() => setOpen(false)}
+            className="mt-2 w-full rounded-lg bg-white px-3 py-2 text-center text-sm font-medium text-[#05070f] disabled:pointer-events-none disabled:opacity-80"
           >
             Lanzar app
-          </Link>
+          </LaunchAppButton>
         </div>
       </div>
     </header>

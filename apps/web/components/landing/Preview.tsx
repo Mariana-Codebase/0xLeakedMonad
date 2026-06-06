@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { LaunchAppButton } from "./LaunchAppButton";
 
 const FALLBACK_TICKER = [
   { time: "LIVE", text: "Brecha detectada · LinkedIn 2021 · 700M afectados", tone: "text-rose-300" },
@@ -148,15 +148,12 @@ export function Preview() {
 
               {/* CTA */}
               <div className="mt-8 text-center">
-                <Link
-                  href="/platform"
-                  className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#3a6fff] to-[#8b5cf6] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#3a6fff]/20 transition-all hover:shadow-xl hover:shadow-[#3a6fff]/30"
-                >
+                <LaunchAppButton className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#3a6fff] to-[#8b5cf6] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#3a6fff]/20 transition-all hover:shadow-xl hover:shadow-[#3a6fff]/30">
                   Probar ahora
                   <svg className="h-4 w-4 transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none">
                     <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
-                </Link>
+                </LaunchAppButton>
               </div>
             </div>
           </div>

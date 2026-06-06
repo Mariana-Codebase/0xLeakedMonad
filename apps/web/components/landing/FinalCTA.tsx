@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { LaunchAppButton } from "./LaunchAppButton";
 
 export function FinalCTA() {
   return (
@@ -38,13 +39,10 @@ export function FinalCTA() {
           </div>
 
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-            <Link
-              href="/platform"
-              className="group relative inline-flex items-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-[#3a6fff] to-[#8b5cf6] px-8 py-4 text-base font-semibold text-white shadow-lg shadow-[#3a6fff]/25 transition-all hover:shadow-xl hover:shadow-[#3a6fff]/30 hover:scale-[1.02]"
-            >
+            <LaunchAppButton className="group relative inline-flex items-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-[#3a6fff] to-[#8b5cf6] px-8 py-4 text-base font-semibold text-white shadow-lg shadow-[#3a6fff]/25 transition-all hover:shadow-xl hover:shadow-[#3a6fff]/30 hover:scale-[1.02] disabled:pointer-events-none disabled:opacity-80">
               <span>Lanzar App</span>
               <ArrowIcon className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </Link>
+            </LaunchAppButton>
           </div>
 
           {/* Trust indicators */}
@@ -171,7 +169,7 @@ export function Footer() {
             <a href="#como-funciona" className="hover:text-white transition-colors">
               Cómo funciona
             </a>
-            <Link href="/platform" className="hover:text-white transition-colors">
+            <Link href="/plataform" className="hover:text-white transition-colors">
               App
             </Link>
             <a

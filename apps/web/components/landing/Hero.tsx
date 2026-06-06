@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { LaunchAppButton } from "./LaunchAppButton";
 
 const TECH_STACK = [
   { name: "Monad", desc: "EVM L1 de alto rendimiento", color: "#8b5cf6" },
@@ -73,13 +73,10 @@ export function Hero() {
             </div>
 
             <div className="mt-8 flex flex-wrap items-center justify-center lg:justify-start gap-3">
-              <Link
-                href="/platform"
-                className="group relative inline-flex items-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-[#3a6fff] to-[#8b5cf6] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#3a6fff]/25 transition-all hover:shadow-xl hover:shadow-[#3a6fff]/30 hover:scale-[1.02]"
-              >
+              <LaunchAppButton className="group relative inline-flex items-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-[#3a6fff] to-[#8b5cf6] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#3a6fff]/25 transition-all hover:shadow-xl hover:shadow-[#3a6fff]/30 hover:scale-[1.02] disabled:pointer-events-none disabled:opacity-80">
                 <span>Lanzar App</span>
                 <ArrowIcon className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </Link>
+              </LaunchAppButton>
               <a
                 href="#como-funciona"
                 className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-6 py-3 text-sm font-medium text-[#cfe0ff] transition-all hover:border-white/20 hover:bg-white/[0.06]"
