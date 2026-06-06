@@ -1,0 +1,16 @@
+{
+  "name": "0xLeaked",
+  "short_name": "0xLeaked",
+  "description": "Deteccion de brechas y evidencia on-chain en Monad",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b1020",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    }
+  ]
+}
