@@ -169,7 +169,7 @@ export function Footer() {
             <a href="#como-funciona" className="hover:text-white transition-colors">
               Cómo funciona
             </a>
-            <Link href="/plataform" className="hover:text-white transition-colors">
+            <Link href="/platform" className="hover:text-white transition-colors">
               App
             </Link>
             <a

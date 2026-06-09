@@ -383,6 +383,8 @@ function AISecurityAgent({
   const [visibleCount, setVisibleCount] = useState(0);
   const [isTyping, setIsTyping] = useState(true);
   const [revokeDone, setRevokeDone] = useState(false);
+  const [showRevokeForm, setShowRevokeForm] = useState(false);
+  const [tokenAddress, setTokenAddress] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const messages = useMemo(() => buildAgentMessages(result), [result]);
@@ -401,6 +403,8 @@ function AISecurityAgent({
     setVisibleCount(0);
     setIsTyping(true);
     setRevokeDone(false);
+    setShowRevokeForm(false);
+    setTokenAddress("");
   }, [result]);
 
   useEffect(() => {
@@ -419,6 +423,13 @@ function AISecurityAgent({
 
   const handleRevoke = useCallback(() => {
     if (!isConnected || !walletClient || !address) return;
+    setShowRevokeForm(true);
+  }, [isConnected, walletClient, address]);
+
+  // La revocación va al contrato del TOKEN: approve(spender = contrato auditado, 0)
+  const sendRevoke = useCallback(() => {
+    if (!isConnected || !walletClient || !address) return;
+    if (!isAddress(tokenAddress)) return;
 
     const data = encodeFunctionData({
       abi: parseAbi(["function approve(address spender, uint256 amount)"]),
@@ -427,11 +438,11 @@ function AISecurityAgent({
     });
 
     sendTransaction({
-      to: contractAddress as `0x${string}`,
+      to: tokenAddress as `0x${string}`,
       data,
       value: 0n,
     });
-  }, [isConnected, walletClient, address, contractAddress, sendTransaction]);
+  }, [isConnected, walletClient, address, tokenAddress, contractAddress, sendTransaction]);
 
   return (
     <div className="cw-card overflow-hidden">
@@ -471,6 +482,49 @@ function AISecurityAgent({
           />
         ))}
         {isTyping && visibleCount < messages.length && <TypingIndicator />}
+
+        {showRevokeForm && !revokeDone && (
+          <div className="cw-slide-up flex gap-3">
+            <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-rose-500/20 to-rose-500/5">
+              <span className="text-xs">🛡️</span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="rounded-xl border border-rose-500/30 bg-white/[0.03] px-4 py-3">
+                <p className="text-sm leading-relaxed text-[#cfe0ff]">
+                  Indica la dirección del <strong>token ERC-20</strong> cuyo approval hacia este
+                  contrato quieres revocar. Enviaré <code className="text-xs">approve(contrato, 0)</code> al token.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <input
+                    type="text"
+                    value={tokenAddress}
+                    onChange={(e) => setTokenAddress(e.target.value.trim())}
+                    placeholder="0x… dirección del token"
+                    className="min-w-[260px] flex-1 rounded-lg border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-white placeholder:text-[#6f88b9] focus:border-rose-500/50 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={sendRevoke}
+                    disabled={!isAddress(tokenAddress) || txPending}
+                    className="inline-flex items-center gap-2 rounded-lg border border-rose-500/40 bg-rose-500/10 px-4 py-2 text-sm font-medium text-rose-300 transition-all hover:border-rose-500/60 hover:bg-rose-500/20 disabled:opacity-50"
+                  >
+                    {txPending ? (
+                      <>
+                        <span className="cw-spin inline-block h-3.5 w-3.5 rounded-full border-2 border-rose-300/30 border-t-rose-300" />
+                        Firmando…
+                      </>
+                    ) : (
+                      "Revocar approval"
+                    )}
+                  </button>
+                </div>
+                {tokenAddress && !isAddress(tokenAddress) && (
+                  <p className="mt-2 text-xs text-amber-300">Dirección inválida.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {revokeDone && txHash && (
           <div className="cw-slide-up flex gap-3">

@@ -1,3 +1,20 @@
+export async function getJson<TResponse>(
+  url: string,
+  opts?: { timeoutMs?: number }
+): Promise<TResponse> {
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(opts?.timeoutMs ?? 8_000)
+  });
+
+  if (!response.ok) {
+    throw new Error(`Request failed (${response.status}) for ${url}`);
+  }
+
+  return (await response.json()) as TResponse;
+}
+
 export async function postJson<TBody, TResponse>(
   url: string,
   body: TBody,

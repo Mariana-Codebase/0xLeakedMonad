@@ -21,6 +21,11 @@ if (fs.existsSync(rootEnvPath)) {
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ["@0xleaked/abi"],
+  async redirects() {
+    return [
+      { source: "/plataform", destination: "/platform", permanent: true }
+    ];
+  },
   webpack: (config) => {
     config.externals.push("pino-pretty", "lokijs", "encoding");
     config.resolve.fallback = { ...config.resolve.fallback, fs: false, net: false, tls: false };

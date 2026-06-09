@@ -12,7 +12,11 @@
     "dev:alert": "pnpm --filter @0xleaked/alert-service dev",
     "build:web": "pnpm --filter @0xleaked/web build",
     "build:api": "pnpm --filter @0xleaked/api-gateway build",
-    "lint:web": "corepack pnpm --filter @0xleaked/web lint"
+    "lint:web": "corepack pnpm --filter @0xleaked/web lint",
+    "start:prod": "node scripts/start-prod.mjs"
+  },
+  "dependencies": {
+    "tsx": "^4.20.6"
   },
   "engines": {
     "node": ">=20.0.0"

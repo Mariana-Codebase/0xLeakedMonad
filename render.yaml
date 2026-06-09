@@ -1,0 +1,57 @@
+services:
+  # Backend completo en un solo Web Service:
+  # api-gateway (puerto público $PORT) + breach/analyzer/alert en localhost interno.
+  - type: web
+    name: 0xleaked-api
+    runtime: node
+    plan: free
+    buildCommand: pnpm install --frozen-lockfile --prod=false
+    startCommand: pnpm start:prod
+    healthCheckPath: /health
+    envVars:
+      - key: PNPM_VERSION
+        value: 9.15.9
+      - key: NODE_VERSION
+        value: 20.19.0
+      - key: NEXT_PUBLIC_ENV
+        value: production
+
+      # Red Monad
+      - key: MONAD_RPC_URL
+        sync: false
+      - key: MONAD_CHAIN_ID
+        value: "10143"
+      - key: MONAD_EXPLORER_URL
+        value: https://testnet.monadexplorer.com
+
+      # Contratos (Monad Testnet)
+      - key: BREACH_REGISTRY_ADDRESS
+        value: "0xC51DD0aD6593559F3E696b2281E9F6fa5D2af09E"
+      - key: ALERT_ORACLE_ADDRESS
+        value: "0x4B9214a1349825373854fb9cBdFDdb585FB45587"
+      - key: REMEDIATION_VAULT_ADDRESS
+        value: "0x68B31918a3827818097936b503bFf3378a932838"
+
+      # Secretos (se configuran en el dashboard / CLI, nunca en el repo)
+      - key: INDEXER_PRIVATE_KEY
+        sync: false
+      - key: HIBP_API_KEY
+        sync: false
+      - key: PINATA_JWT
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ALCHEMY_WEBHOOK_SIGNING_KEY
+        sync: false
+
+      # CORS: URL del frontend en Vercel (separar con comas si hay varias)
+      - key: CORS_ORIGIN
+        sync: false
+
+      # URLs internas entre procesos (mismo contenedor)
+      - key: BREACH_SERVICE_URL
+        value: http://localhost:4101
+      - key: ANALYZER_SERVICE_URL
+        value: http://localhost:4102
+      - key: ALERT_SERVICE_URL
+        value: http://localhost:4103

@@ -10,7 +10,8 @@ function required(value: string | undefined, fallback: string): string {
 }
 
 export const config = {
-  port: Number(process.env.API_GATEWAY_PORT ?? 4000),
+  // Render inyecta PORT; en local se usa API_GATEWAY_PORT
+  port: Number(process.env.PORT ?? process.env.API_GATEWAY_PORT ?? 4000),
   breachServiceUrl: required(process.env.BREACH_SERVICE_URL, "http://localhost:4101"),
   analyzerServiceUrl: required(process.env.ANALYZER_SERVICE_URL, "http://localhost:4102"),
   alertServiceUrl: required(process.env.ALERT_SERVICE_URL, "http://localhost:4103"),
@@ -20,7 +21,14 @@ export const config = {
     ""
   ),
 
+  // Lista separada por comas; vacío = permitir cualquier origen (dev)
+  corsOrigin: required(process.env.CORS_ORIGIN, ""),
+
   appEnv: required(process.env.NEXT_PUBLIC_ENV, "development"),
+
+  // RPC para eth_getLogs (el público de Monad permite rangos de 100 bloques;
+  // Alchemy free tier solo 10)
+  logsRpcUrl: required(process.env.LOGS_RPC_URL, "https://testnet-rpc.monad.xyz"),
 
   monadChainId: required(process.env.MONAD_CHAIN_ID, "10143"),
 

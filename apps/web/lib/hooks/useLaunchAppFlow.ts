@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAccount, useConnect } from "wagmi";
 import { pickWalletConnector } from "../pickWalletConnector";
 
-const PLATFORM_ROUTE = "/plataform";
+const PLATFORM_ROUTE = "/platform";
 
 export type LaunchPhase = "idle" | "wallet-connect" | "onboarding";
 

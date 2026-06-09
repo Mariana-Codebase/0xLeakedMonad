@@ -3,11 +3,11 @@ import crypto from "node:crypto";
 import { createServer } from "node:http";
 import express from "express";
 import { WebSocketServer, WebSocket } from "ws";
-import { isAddress, parseAbiItem, type Address } from "viem";
+import { createPublicClient, http, isAddress, parseAbiItem, type Address } from "viem";
 import { remediationVaultAbi, breachRegistryAbi } from "@0xleaked/abi";
 import { getPublicClient } from "@0xleaked/chain";
 import { config } from "./config.js";
-import { postJson } from "./http.js";
+import { getJson, postJson } from "./http.js";
 
 type BreachScanPayload = {
   target: string;
@@ -65,6 +65,114 @@ function requestId(): string {
   return crypto.randomBytes(5).toString("hex");
 }
 
+function serializeArgs(args: unknown): Record<string, unknown> {
+  if (!args || typeof args !== "object") return {};
+  return Object.fromEntries(
+    Object.entries(args as Record<string, unknown>).map(([key, value]) => [
+      key,
+      typeof value === "bigint" ? value.toString() : value
+    ])
+  );
+}
+
+const breachRecordedEvent = parseAbiItem(
+  "event BreachRecorded(uint256 indexed id, bytes32 indexed targetHash, address indexed beneficiary, string source, string dataType, address reporter, uint256 nonce)"
+);
+
+// Cliente dedicado a eth_getLogs: el RPC público de Monad acepta rangos de
+// hasta 100 bloques (Alchemy free tier solo 10).
+const logsClient = createPublicClient({
+  transport: http(config.logsRpcUrl, { retryCount: 3, retryDelay: 1000, timeout: 30_000 })
+});
+
+const LOGS_CHUNK_SIZE = 100n;
+
+type CachedEvent = {
+  id: string;
+  contract: string;
+  eventName: string;
+  txHash: string;
+  blockNumber: string;
+  logIndex: number;
+  args: Record<string, unknown>;
+  indexedAt: string;
+};
+
+const eventCache: CachedEvent[] = [];
+const MAX_CACHED_EVENTS = 200;
+
+function addToEventCache(record: CachedEvent): boolean {
+  if (eventCache.some((e) => e.id === record.id)) return false;
+  eventCache.push(record);
+  eventCache.sort((a, b) => Number(BigInt(b.blockNumber) - BigInt(a.blockNumber)) || b.logIndex - a.logIndex);
+  eventCache.splice(MAX_CACHED_EVENTS);
+  return true;
+}
+
+function logToCachedEvent(log: {
+  transactionHash?: `0x${string}` | null;
+  logIndex?: number | null;
+  blockNumber?: bigint | null;
+  args?: unknown;
+}, contract: string): CachedEvent {
+  return {
+    id: `${log.transactionHash ?? "0x"}-${log.logIndex ?? 0}`,
+    contract,
+    eventName: "BreachRecorded",
+    txHash: log.transactionHash ?? "0x",
+    blockNumber: (log.blockNumber ?? 0n).toString(),
+    logIndex: log.logIndex ?? 0,
+    args: serializeArgs(log.args),
+    indexedAt: new Date().toISOString()
+  };
+}
+
+async function getBreachLogsChunked(registry: Address, fromBlock: bigint, toBlock: bigint) {
+  const all = [];
+  for (let start = fromBlock; start <= toBlock; start += LOGS_CHUNK_SIZE) {
+    const end = start + LOGS_CHUNK_SIZE - 1n > toBlock ? toBlock : start + LOGS_CHUNK_SIZE - 1n;
+    const logs = await logsClient.getLogs({
+      address: registry,
+      event: breachRecordedEvent,
+      fromBlock: start,
+      toBlock: end
+    });
+    all.push(...logs);
+  }
+  return all;
+}
+
+// Backfill inicial: escanea hacia atrás en chunks hasta llenar el cache
+// o agotar el presupuesto de llamadas RPC.
+async function backfillEventCache() {
+  const registry = config.breachRegistryAddress as Address | undefined;
+  if (!registry) return;
+
+  try {
+    const currentBlock = await logsClient.getBlockNumber();
+    let toBlock = currentBlock;
+    const maxChunks = 120;
+
+    for (let i = 0; i < maxChunks && toBlock > 0n; i++) {
+      const fromBlock = toBlock >= LOGS_CHUNK_SIZE ? toBlock - LOGS_CHUNK_SIZE + 1n : 0n;
+      const logs = await logsClient.getLogs({
+        address: registry,
+        event: breachRecordedEvent,
+        fromBlock,
+        toBlock
+      });
+      for (const log of logs) addToEventCache(logToCachedEvent(log, registry));
+      if (eventCache.length >= 50) break;
+
+      toBlock = fromBlock - 1n;
+      await new Promise((r) => setTimeout(r, 300));
+    }
+    console.log(`[backfill] cache inicial con ${eventCache.length} eventos BreachRecorded`);
+  } catch (error) {
+    console.warn(`[backfill] fallo: ${(error as Error).message}`);
+  }
+}
+
 app.post("/api/webhooks/alchemy", express.raw({ type: "application/json" }), async (req, res) => {
   const signature = req.header("X-Alchemy-Signature");
   const rawBody = req.body as Buffer;
@@ -111,6 +219,11 @@ app.post("/api/webhooks/alchemy", express.raw({ type: "application/json" }), asy
 
     recentAlchemyEvents.splice(20);
 
+    broadcastToClients({
+      type: "alchemy_event",
+      data: { suspicious, payload }
+    });
+
   } catch {
     res.status(400).json({ ok: false, error: "payload JSON invalido" });
     return;
@@ -120,7 +233,10 @@ app.post("/api/webhooks/alchemy", express.raw({ type: "application/json" }), asy
   res.json({ ok: true, accepted: true });
 });
 
-app.use(cors());
+const allowedOrigins = config.corsOrigin
+  ? config.corsOrigin.split(",").map((o) => o.trim()).filter(Boolean)
+  : undefined;
+app.use(cors(allowedOrigins ? { origin: allowedOrigins } : undefined));
 app.use(express.json());
 app.use((req, _res, next) => {
   const id = requestId();
@@ -299,45 +415,23 @@ app.get("/api/remediation/vault/balance/:address", async (req, res) => {
   }
 });
 
-app.get("/api/events/recent", async (req, res) => {
+app.get("/api/events/recent", (req, res) => {
   const limit = Math.min(Number(req.query.limit ?? 20), 100);
+  const events = eventCache.slice(0, limit);
+  res.json({ ok: true, count: events.length, events });
+});
 
+app.get("/api/alerts", async (_req, res) => {
   try {
-    const client = getPublicClient();
-    const currentBlock = await client.getBlockNumber();
-    const fromBlock = currentBlock > 5000n ? currentBlock - 5000n : 0n;
-
-    const registryAddress = config.breachRegistryAddress as Address | undefined;
-    if (!registryAddress) {
-      res.json({ ok: true, count: 0, events: [] });
-      return;
-    }
-
-    const logs = await client.getLogs({
-      address: registryAddress,
-      event: parseAbiItem(
-        "event BreachRecorded(uint256 indexed id, bytes32 indexed targetHash, address indexed beneficiary, string source, string dataType, address reporter, uint256 nonce)"
-      ),
-      fromBlock,
-      toBlock: "latest"
-    });
-
-    const events = logs.slice(-limit).reverse().map((log, i) => ({
-      id: String(i),
-      contract: registryAddress,
-      eventName: "BreachRecorded",
-      txHash: log.transactionHash ?? "0x",
-      blockNumber: (log.blockNumber ?? 0n).toString(),
-      logIndex: log.logIndex ?? 0,
-      args: { topics: log.topics, data: log.data },
-      indexedAt: new Date().toISOString()
-    }));
-
-    res.json({ ok: true, count: events.length, events });
+    const result = await getJson<{ ok: boolean; alerts: unknown[] }>(
+      `${config.alertServiceUrl}/alerts`,
+      { timeoutMs: 5_000 }
+    );
+    res.json(result);
   } catch (error) {
-    res.status(503).json({
+    res.status(502).json({
       ok: false,
-      error: "rpc_unavailable",
+      error: "alert-service no disponible",
       details: (error as Error).message
     });
   }
@@ -417,34 +511,31 @@ export function broadcastToClients(event: {
 
 let lastPolledBlock = 0n;
 setInterval(async () => {
-  if (wsClients.size === 0) return;
   const registryAddress = config.breachRegistryAddress as Address | undefined;
   if (!registryAddress) return;
 
   try {
-    const client = getPublicClient();
-    const currentBlock = await client.getBlockNumber();
+    const currentBlock = await logsClient.getBlockNumber();
     if (lastPolledBlock === 0n) lastPolledBlock = currentBlock > 50n ? currentBlock - 50n : 0n;
+    if (currentBlock <= lastPolledBlock) return;
 
-    const logs = await client.getLogs({
-      address: registryAddress,
-      event: parseAbiItem(
-        "event BreachRecorded(uint256 indexed id, bytes32 indexed targetHash, address indexed beneficiary, string source, string dataType, address reporter, uint256 nonce)"
-      ),
-      fromBlock: lastPolledBlock + 1n,
-      toBlock: "latest"
-    });
+    const logs = await getBreachLogsChunked(registryAddress, lastPolledBlock + 1n, currentBlock);
 
     for (const log of logs) {
-      broadcastToClients({
-        type: "onchain_event",
-        data: {
-          eventName: "BreachRecorded",
-          contract: registryAddress,
-          txHash: log.transactionHash ?? "0x",
-          blockNumber: (log.blockNumber ?? 0n).toString(),
-          args: { topics: log.topics, data: log.data }
-        }
+      const eventData = logToCachedEvent(log, registryAddress);
+      const isNew = addToEventCache(eventData);
+      if (!isNew) continue;
+
+      broadcastToClients({ type: "onchain_event", data: eventData });
+
+      postJson(`${config.alertServiceUrl}/notify`, {
+        source: "onchain-monitor",
+        severity: "medium",
+        title: "Brecha registrada on-chain",
+        summary: `BreachRecorded (fuente: ${eventData.args.source ?? "?"}, tipo: ${eventData.args.dataType ?? "?"}) en bloque ${eventData.blockNumber}`,
+        payload: eventData
+      }).catch((error: Error) => {
+        console.warn(`[onchain-monitor] alert-service no disponible: ${error.message}`);
       });
     }
 
@@ -452,6 +543,8 @@ setInterval(async () => {
   } catch {
   }
 }, 5000);
+
+void backfillEventCache();
 
 server.listen(config.port, () => {
   console.log(`[api-gateway] HTTP + WebSocket corriendo en http://localhost:${config.port}`);
