@@ -836,6 +836,7 @@ app.post("/sign-for-claim", async (req, res) => {
   }
 });
 
-app.listen(port, () => {
+// Solo loopback: en Render únicamente el api-gateway debe exponerse públicamente
+app.listen(port, "127.0.0.1", () => {
   console.log(`[breach-service] corriendo en http://localhost:${port}`);
 });

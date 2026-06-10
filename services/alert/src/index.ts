@@ -65,6 +65,7 @@ app.get("/alerts", (_req, res) => {
   res.json({ ok: true, alerts });
 });
 
-app.listen(port, () => {
+// Solo loopback: en Render únicamente el api-gateway debe exponerse públicamente
+app.listen(port, "127.0.0.1", () => {
   console.log(`[alert-service] corriendo en http://localhost:${port}`);
 });
